@@ -1,521 +1,685 @@
-const cfg = window.APP_CONFIG;
+const config = window.APP_CONFIG || {};
 
-if (
-  !cfg ||
-  !cfg.SUPABASE_URL ||
-  !cfg.SUPABASE_ANON_KEY ||
-  cfg.SUPABASE_URL.includes("SEU-PROJETO") ||
-  cfg.SUPABASE_ANON_KEY.includes("SUA-CHAVE")
-) {
-  alert(
-    "Configuração do Supabase em falta. Preenche SUPABASE_URL e SUPABASE_ANON_KEY no ficheiro config.js."
-  );
-}
-
-const sb = supabase.createClient(
-  cfg.SUPABASE_URL,
-  cfg.SUPABASE_ANON_KEY
-);
+const $ = (selector) => document.querySelector(selector);
 
 const criterios = [
   {
-    key: "entrega",
+    campo: "entrega",
     titulo: "📦 Entrega",
-    descricao: "Resultados e cumprimento dos objetivos definidos",
+    descricao: "Resultados e cumprimento dos objetivos definidos"
   },
   {
-    key: "execucao",
+    campo: "execucao",
     titulo: "▶️ Execução",
-    descricao: "Cumprimento das etapas e procedimentos observáveis",
+    descricao: "Cumprimento das etapas e procedimentos observáveis"
   },
   {
-    key: "qualidade",
+    campo: "qualidade",
     titulo: "✅ Qualidade",
-    descricao: "Precisão, conformidade e correções verificáveis",
+    descricao: "Precisão, conformidade e correções verificáveis"
   },
   {
-    key: "respeito",
+    campo: "respeito",
     titulo: "🤝 Respeito",
-    descricao: "Comportamentos profissionais observáveis e colaboração",
-  },
+    descricao: "Comportamentos profissionais observáveis e colaboração"
+  }
 ];
 
+let supabaseClient = null;
+let utilizador = null;
 let colaboradores = [];
-let avaliacoes = {};
 let indiceAtual = 0;
-let sessaoAtual = null;
+let classificacoes = {};
 
-const $ = (id) => document.getElementById(id);
+function mostrarMensagem(
+  texto,
+  erro = false,
+  destino = "#msg"
+) {
+  const elemento = $(destino);
 
-const loginBox = $("loginBox");
-const app = $("app");
-const emailInput = $("email");
-const passwordInput = $("password");
-const authMsg = $("authMsg");
-
-/* =========================================================
-   AUTENTICAÇÃO
-   ========================================================= */
-
-$("login").addEventListener("click", async () => {
-  await autenticar("login");
-});
-
-$("signup").addEventListener("click", async () => {
-  await autenticar("signup");
-});
-
-$("logout").addEventListener("click", async () => {
-  const { error } = await sb.auth.signOut();
-
-  if (error) {
-    alert(`Erro ao terminar sessão: ${error.message}`);
-  }
-});
-
-async function autenticar(tipo) {
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-
-  authMsg.textContent = "";
-
-  if (!email || !password) {
-    authMsg.textContent = "Preenche o e-mail e a password.";
+  if (!elemento) {
     return;
   }
 
-  if (password.length < 6) {
-    authMsg.textContent =
-      "A password deve ter pelo menos 6 caracteres.";
-    return;
-  }
-
-  try {
-    if (tipo === "login") {
-      const { error } = await sb.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        authMsg.textContent = traduzErroAuth(error.message);
-        return;
-      }
-
-      authMsg.textContent = "";
-    } else {
-      const { data, error } = await sb.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) {
-        authMsg.textContent = traduzErroAuth(error.message);
-        return;
-      }
-
-      if (data.session) {
-        authMsg.textContent = "Conta criada com sucesso.";
-      } else {
-        authMsg.textContent =
-          "Conta criada. Verifica o teu e-mail para confirmar a conta.";
-      }
-    }
-  } catch (erro) {
-    console.error(erro);
-    authMsg.textContent = "Não foi possível comunicar com o servidor.";
-  }
+  elemento.textContent = texto;
+  elemento.className = erro ? "error" : "ok";
 }
 
-function traduzErroAuth(mensagem) {
-  const msg = mensagem.toLowerCase();
-
-  if (msg.includes("invalid login credentials")) {
-    return "E-mail ou password incorretos.";
-  }
-
-  if (msg.includes("email not confirmed")) {
-    return "Confirma primeiro o endereço de e-mail.";
-  }
-
-  if (msg.includes("already registered")) {
-    return "Já existe uma conta com este e-mail.";
-  }
-
-  if (msg.includes("password")) {
-    return `Problema com a password: ${mensagem}`;
-  }
-
-  return mensagem;
+function configuracaoValida() {
+  return (
+    typeof config.SUPABASE_URL === "string" &&
+    config.SUPABASE_URL.startsWith("https://") &&
+    typeof config.SUPABASE_PUBLISHABLE_KEY === "string" &&
+    config.SUPABASE_PUBLISHABLE_KEY.startsWith(
+      "sb_publishable_"
+    )
+  );
 }
 
-/* =========================================================
-   ESTADO DA SESSÃO
-   ========================================================= */
-
-sb.auth.onAuthStateChange((_evento, session) => {
-  atualizarSessao(session);
-});
-
-sb.auth
-  .getSession()
-  .then(({ data }) => {
-    atualizarSessao(data.session);
-  })
-  .catch((erro) => {
-    console.error("Erro ao obter sessão:", erro);
-  });
-
-async function atualizarSessao(session) {
-  sessaoAtual = session;
-
-  const autenticado = !!session;
-
-  loginBox.hidden = autenticado;
-  app.hidden = !autenticado;
-
-  if (!autenticado) {
-    colaboradores = [];
-    avaliacoes = {};
-    indiceAtual = 0;
-    return;
-  }
-
-  await carregarDados();
-}
-
-/* =========================================================
-   CARREGAR DADOS
-   ========================================================= */
-
-async function carregarDados() {
-  try {
-    const {
-      data: dadosColaboradores,
-      error: erroColaboradores,
-    } = await sb
-      .from("colaboradores")
-      .select("id, numero, nome, ativo")
-      .eq("ativo", true)
-      .order("numero", { ascending: true });
-
-    if (erroColaboradores) {
-      throw erroColaboradores;
-    }
-
-    colaboradores = dadosColaboradores || [];
-
-    if (colaboradores.length === 0) {
-      alert(
-        "Não existem colaboradores ativos na base de dados."
-      );
-
-      return;
-    }
-
-    const {
-      data: dadosAvaliacoes,
-      error: erroAvaliacoes,
-    } = await sb
-      .from("avaliacoes")
-      .select(
-        "id, colaborador_id, entrega, execucao, qualidade, respeito, estado, atualizado_em"
-      );
-
-    if (erroAvaliacoes) {
-      throw erroAvaliacoes;
-    }
-
-    avaliacoes = {};
-
-    (dadosAvaliacoes || []).forEach((avaliacao) => {
-      avaliacoes[avaliacao.colaborador_id] = avaliacao;
-    });
-
-    const primeiroIncompleto = colaboradores.findIndex(
-      (colaborador) =>
-        !avaliacaoCompleta(avaliacoes[colaborador.id])
+function iniciarSupabase() {
+  if (!configuracaoValida()) {
+    mostrarMensagem(
+      "A configuração do Supabase está incompleta ou inválida.",
+      true,
+      "#authMsg"
     );
 
-    indiceAtual =
-      primeiroIncompleto >= 0
-        ? primeiroIncompleto
-        : 0;
-
-    renderizar();
-  } catch (erro) {
-    console.error("Erro ao carregar dados:", erro);
-
-    alert(
-      `Erro ao carregar dados: ${
-        erro.message || "erro desconhecido"
-      }`
-    );
-  }
-}
-
-/* =========================================================
-   AVALIAÇÃO
-   ========================================================= */
-
-function avaliacaoCompleta(avaliacao) {
-  if (!avaliacao) {
     return false;
   }
 
-  return criterios.every(({ key }) => {
-    const valor = avaliacao[key];
-
-    return (
-      Number.isInteger(valor) &&
-      valor >= 0 &&
-      valor <= 10
+  if (
+    typeof supabase === "undefined" ||
+    typeof supabase.createClient !== "function"
+  ) {
+    mostrarMensagem(
+      "Não foi possível carregar a biblioteca do Supabase.",
+      true,
+      "#authMsg"
     );
-  });
-}
 
-function numeroCriteriosPreenchidos(avaliacao) {
-  if (!avaliacao) {
-    return 0;
+    return false;
   }
 
-  return criterios.filter(({ key }) => {
-    const valor = avaliacao[key];
-
-    return (
-      Number.isInteger(valor) &&
-      valor >= 0 &&
-      valor <= 10
-    );
-  }).length;
-}
-
-function definirNota(criterio, nota) {
-  const colaborador = colaboradores[indiceAtual];
-
-  if (!colaborador) {
-    return;
-  }
-
-  if (!avaliacoes[colaborador.id]) {
-    avaliacoes[colaborador.id] = {};
-  }
-
-  avaliacoes[colaborador.id][criterio] = nota;
-
-  renderizar();
-}
-
-/* =========================================================
-   INTERFACE
-   ========================================================= */
-
-function renderizar() {
-  if (!colaboradores.length) {
-    return;
-  }
-
-  const colaborador = colaboradores[indiceAtual];
-
-  const avaliacao =
-    avaliacoes[colaborador.id] || {};
-
-  $("count").textContent =
-    `Colaborador ${indiceAtual + 1} de ${colaboradores.length}`;
-
-  $("person").textContent =
-    `${colaborador.numero} - ${colaborador.nome}`;
-
-  const preenchidos =
-    numeroCriteriosPreenchidos(avaliacao);
-
-  $("filled").textContent =
-    `${preenchidos}/${criterios.length}`;
-
-  const progresso = Math.round(
-    ((indiceAtual + 1) / colaboradores.length) * 100
+  supabaseClient = supabase.createClient(
+    config.SUPABASE_URL,
+    config.SUPABASE_PUBLISHABLE_KEY
   );
 
-  $("bar").style.width = `${progresso}%`;
+  return true;
+}
 
-  $("criteria").innerHTML = criterios
-    .map((criterio) => {
-      const botoes = Array.from(
-        { length: 11 },
-        (_, nota) => {
-          const selecionado =
-            avaliacao[criterio.key] === nota;
+function atualizarVisibilidade() {
+  const autenticado = Boolean(utilizador);
 
-          return `
-            <button
-              type="button"
-              data-criterio="${criterio.key}"
-              data-nota="${nota}"
-              class="${selecionado ? "active" : ""}"
-              aria-label="${criterio.titulo}: ${nota}"
-            >
-              ${nota}
-            </button>
-          `;
-        }
-      ).join("");
+  $("#login").classList.toggle(
+    "hidden",
+    autenticado
+  );
+
+  $("#app").classList.toggle(
+    "hidden",
+    !autenticado
+  );
+
+  if (autenticado) {
+    $("#who").textContent =
+      utilizador.email || "";
+  }
+}
+
+async function verificarSessao() {
+  if (!supabaseClient) {
+    return;
+  }
+
+  const { data, error } =
+    await supabaseClient.auth.getSession();
+
+  if (error) {
+    mostrarMensagem(
+      error.message,
+      true,
+      "#authMsg"
+    );
+
+    return;
+  }
+
+  utilizador =
+    data.session?.user || null;
+
+  atualizarVisibilidade();
+
+  if (utilizador) {
+    await carregarColaboradores();
+  }
+}
+
+async function carregarColaboradores() {
+  mostrarMensagem(
+    "A carregar colaboradores..."
+  );
+
+  const { data, error } =
+    await supabaseClient
+      .from("colaboradores")
+      .select("id, numero, nome")
+      .eq("ativo", true)
+      .order("numero", {
+        ascending: true
+      });
+
+  if (error) {
+    mostrarMensagem(
+      "Não foi possível carregar os colaboradores: " +
+        error.message,
+      true
+    );
+
+    return;
+  }
+
+  colaboradores = data || [];
+
+  if (colaboradores.length === 0) {
+    mostrarMensagem(
+      "Não existem colaboradores ativos.",
+      true
+    );
+
+    return;
+  }
+
+  indiceAtual = 0;
+
+  await apresentarColaborador();
+}
+
+async function carregarAvaliacaoAtual() {
+  const colaborador =
+    colaboradores[indiceAtual];
+
+  const { data, error } =
+    await supabaseClient
+      .from("avaliacoes")
+      .select(
+        "entrega, execucao, qualidade, respeito, estado"
+      )
+      .eq(
+        "avaliador_id",
+        utilizador.id
+      )
+      .eq(
+        "colaborador_id",
+        colaborador.id
+      )
+      .maybeSingle();
+
+  if (error) {
+    mostrarMensagem(
+      "Não foi possível carregar a avaliação: " +
+        error.message,
+      true
+    );
+
+    return null;
+  }
+
+  return data;
+}
+
+function criarBotoesClassificacao(campo) {
+  return Array.from(
+    { length: 11 },
+    (_, nota) => {
+      const selecionado =
+        classificacoes[campo] === nota
+          ? "sel"
+          : "";
 
       return `
-        <section class="criterion card">
+        <button
+          type="button"
+          class="score ${selecionado}"
+          onclick="selecionarNota('${campo}', ${nota})"
+          aria-label="${campo}: ${nota}"
+        >
+          ${nota}
+        </button>
+      `;
+    }
+  ).join("");
+}
 
-          <h3>
-            ${criterio.titulo}
-          </h3>
+function criarCriteriosHTML() {
+  return criterios
+    .map(
+      ({
+        campo,
+        titulo,
+        descricao
+      }) => `
+        <section class="card">
+          <h3>${titulo}</h3>
 
-          <p>
-            ${criterio.descricao}
+          <p class="muted">
+            ${descricao}
           </p>
 
           <div class="scores">
-            ${botoes}
+            ${criarBotoesClassificacao(
+              campo
+            )}
           </div>
-
         </section>
-      `;
-    })
+      `
+    )
     .join("");
-
-  document
-    .querySelectorAll("[data-criterio]")
-    .forEach((botao) => {
-      botao.addEventListener("click", () => {
-        definirNota(
-          botao.dataset.criterio,
-          Number(botao.dataset.nota)
-        );
-      });
-    });
-
-  $("prev").disabled = indiceAtual === 0;
-
-  $("next").disabled =
-    indiceAtual === colaboradores.length - 1;
-
-  $("save").disabled =
-    !avaliacaoCompleta(avaliacao);
 }
 
-/* =========================================================
-   NAVEGAÇÃO
-   ========================================================= */
+function avaliacaoCompleta() {
+  return criterios.every(
+    ({ campo }) =>
+      Number.isInteger(
+        classificacoes[campo]
+      )
+  );
+}
 
-$("prev").addEventListener("click", () => {
-  if (indiceAtual > 0) {
-    indiceAtual -= 1;
-    renderizar();
-  }
-});
+function atualizarCriterios() {
+  $("#criteria").innerHTML =
+    criarCriteriosHTML();
 
-$("next").addEventListener("click", () => {
-  if (indiceAtual < colaboradores.length - 1) {
-    indiceAtual += 1;
-    renderizar();
-  }
-});
+  $("#save").disabled =
+    !avaliacaoCompleta();
+}
 
-/* =========================================================
-   GUARDAR
-   ========================================================= */
-
-$("save").addEventListener("click", async () => {
-  const colaborador = colaboradores[indiceAtual];
-
-  if (!colaborador) {
+async function apresentarColaborador() {
+  if (colaboradores.length === 0) {
     return;
   }
 
-  const avaliacao =
-    avaliacoes[colaborador.id];
+  const colaborador =
+    colaboradores[indiceAtual];
 
-  if (!avaliacaoCompleta(avaliacao)) {
-    alert(
-      "Preenche os quatro critérios antes de guardar."
+  $("#counter").textContent =
+    `Colaborador ${indiceAtual + 1} de ${colaboradores.length}`;
+
+  $("#person").textContent =
+    `${colaborador.numero} - ${colaborador.nome}`;
+
+  $("#prev").disabled =
+    indiceAtual === 0;
+
+  $("#next").disabled =
+    indiceAtual ===
+    colaboradores.length - 1;
+
+  $("#save").disabled = true;
+
+  $("#status").textContent =
+    "A carregar...";
+
+  mostrarMensagem("");
+
+  const avaliacao =
+    await carregarAvaliacaoAtual();
+
+  classificacoes = avaliacao
+    ? {
+        entrega: avaliacao.entrega,
+        execucao: avaliacao.execucao,
+        qualidade: avaliacao.qualidade,
+        respeito: avaliacao.respeito
+      }
+    : {};
+
+  $("#status").textContent =
+    avaliacao?.estado === "concluida"
+      ? "Avaliação guardada"
+      : "Por preencher";
+
+  atualizarCriterios();
+}
+
+window.selecionarNota = function (
+  campo,
+  nota
+) {
+  classificacoes[campo] = nota;
+
+  $("#status").textContent =
+    "Alterações por guardar";
+
+  atualizarCriterios();
+};
+
+async function guardarAvaliacao() {
+  if (!avaliacaoCompleta()) {
+    mostrarMensagem(
+      "Preenche os quatro critérios antes de guardar.",
+      true
     );
 
     return;
   }
 
-  const botaoGuardar = $("save");
+  const colaborador =
+    colaboradores[indiceAtual];
 
-  const textoAnterior =
-    botaoGuardar.textContent;
+  $("#save").disabled = true;
+  $("#save").textContent =
+    "A guardar...";
 
-  botaoGuardar.disabled = true;
-  botaoGuardar.textContent = "A guardar...";
+  const registo = {
+    avaliador_id:
+      utilizador.id,
 
-  try {
-    const {
-      data: dadosUtilizador,
-      error: erroUtilizador,
-    } = await sb.auth.getUser();
+    colaborador_id:
+      colaborador.id,
 
-    if (erroUtilizador) {
-      throw erroUtilizador;
-    }
+    entrega:
+      classificacoes.entrega,
 
-    const user = dadosUtilizador.user;
+    execucao:
+      classificacoes.execucao,
 
-    if (!user) {
-      throw new Error(
-        "Sessão inválida. Entra novamente."
-      );
-    }
+    qualidade:
+      classificacoes.qualidade,
 
-    const registo = {
-      avaliador_id: user.id,
-      colaborador_id: colaborador.id,
+    respeito:
+      classificacoes.respeito,
 
-      entrega: avaliacao.entrega,
-      execucao: avaliacao.execucao,
-      qualidade: avaliacao.qualidade,
-      respeito: avaliacao.respeito,
+    estado:
+      "concluida",
 
-      estado: "concluida",
+    atualizado_em:
+      new Date().toISOString()
+  };
 
-      atualizado_em:
-        new Date().toISOString(),
-    };
-
-    const {
-      data: resultado,
-      error,
-    } = await sb
+  const { error } =
+    await supabaseClient
       .from("avaliacoes")
       .upsert(
         registo,
         {
           onConflict:
-            "avaliador_id,colaborador_id",
+            "avaliador_id,colaborador_id"
         }
-      )
-      .select()
-      .single();
+      );
 
-    if (error) {
-      throw error;
-    }
+  $("#save").textContent =
+    "Guardar";
 
-    avaliacoes[colaborador.id] = resultado;
+  $("#save").disabled =
+    !avaliacaoCompleta();
 
-    botaoGuardar.textContent = "✓ Guardado";
-
-    setTimeout(() => {
-      botaoGuardar.textContent = "Guardar";
-      renderizar();
-    }, 1200);
-  } catch (erro) {
-    console.error("Erro ao guardar:", erro);
-
-    alert(
-      `Não foi possível guardar: ${
-        erro.message || "erro desconhecido"
-      }`
+  if (error) {
+    mostrarMensagem(
+      "Não foi possível guardar: " +
+        error.message,
+      true
     );
 
-    botaoGuardar.textContent =
-      textoAnterior
+    return;
+  }
+
+  $("#status").textContent =
+    "Avaliação guardada";
+
+  mostrarMensagem(
+    "Avaliação guardada com sucesso."
+  );
+}
+
+async function navegar(direcao) {
+  const novoIndice =
+    indiceAtual + direcao;
+
+  if (
+    novoIndice < 0 ||
+    novoIndice >=
+      colaboradores.length
+  ) {
+    return;
+  }
+
+  indiceAtual = novoIndice;
+
+  await apresentarColaborador();
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+async function entrar() {
+  const email =
+    $("#email").value.trim();
+
+  const password =
+    $("#password").value;
+
+  if (!email || !password) {
+    mostrarMensagem(
+      "Introduz o e-mail e a password.",
+      true,
+      "#authMsg"
+    );
+
+    return;
+  }
+
+  $("#signin").disabled = true;
+  $("#signin").textContent =
+    "A entrar...";
+
+  const { data, error } =
+    await supabaseClient.auth
+      .signInWithPassword({
+        email,
+        password
+      });
+
+  $("#signin").disabled = false;
+  $("#signin").textContent =
+    "Entrar";
+
+  if (error) {
+    mostrarMensagem(
+      error.message,
+      true,
+      "#authMsg"
+    );
+
+    return;
+  }
+
+  utilizador =
+    data.user;
+
+  mostrarMensagem(
+    "",
+    false,
+    "#authMsg"
+  );
+
+  atualizarVisibilidade();
+
+  await carregarColaboradores();
+}
+
+async function criarConta() {
+  const email =
+    $("#email").value.trim();
+
+  const password =
+    $("#password").value;
+
+  if (!email || !password) {
+    mostrarMensagem(
+      "Introduz o e-mail e uma password.",
+      true,
+      "#authMsg"
+    );
+
+    return;
+  }
+
+  if (password.length < 6) {
+    mostrarMensagem(
+      "A password deve ter pelo menos 6 caracteres.",
+      true,
+      "#authMsg"
+    );
+
+    return;
+  }
+
+  $("#signup").disabled = true;
+  $("#signup").textContent =
+    "A criar...";
+
+  const { data, error } =
+    await supabaseClient.auth
+      .signUp({
+        email,
+        password
+      });
+
+  $("#signup").disabled = false;
+  $("#signup").textContent =
+    "Criar conta";
+
+  if (error) {
+    mostrarMensagem(
+      error.message,
+      true,
+      "#authMsg"
+    );
+
+    return;
+  }
+
+  if (data.session) {
+    utilizador =
+      data.user;
+
+    atualizarVisibilidade();
+
+    await carregarColaboradores();
+
+    return;
+  }
+
+  mostrarMensagem(
+    "Conta criada. Confirma o e-mail antes de entrar, se essa opção estiver ativa no Supabase.",
+    false,
+    "#authMsg"
+  );
+}
+
+async function sair() {
+  const { error } =
+    await supabaseClient.auth
+      .signOut();
+
+  if (error) {
+    mostrarMensagem(
+      error.message,
+      true
+    );
+
+    return;
+  }
+
+  utilizador = null;
+  colaboradores = [];
+  classificacoes = {};
+  indiceAtual = 0;
+
+  $("#email").value = "";
+  $("#password").value = "";
+
+  atualizarVisibilidade();
+
+  mostrarMensagem(
+    "Sessão terminada.",
+    false,
+    "#authMsg"
+  );
+}
+
+function configurarEventos() {
+  $("#signin")
+    .addEventListener(
+      "click",
+      entrar
+    );
+
+  $("#signup")
+    .addEventListener(
+      "click",
+      criarConta
+    );
+
+  $("#logout")
+    .addEventListener(
+      "click",
+      sair
+    );
+
+  $("#save")
+    .addEventListener(
+      "click",
+      guardarAvaliacao
+    );
+
+  $("#prev")
+    .addEventListener(
+      "click",
+      () => navegar(-1)
+    );
+
+  $("#next")
+    .addEventListener(
+      "click",
+      () => navegar(1)
+    );
+
+  $("#password")
+    .addEventListener(
+      "keydown",
+      (evento) => {
+        if (
+          evento.key === "Enter"
+        ) {
+          entrar();
+        }
+      }
+    );
+}
+
+async function iniciarAplicacao() {
+  if (!iniciarSupabase()) {
+    return;
+  }
+
+  configurarEventos();
+
+  await verificarSessao();
+
+  supabaseClient.auth
+    .onAuthStateChange(
+      async (
+        _evento,
+        sessao
+      ) => {
+        const novoUtilizador =
+          sessao?.user || null;
+
+        if (
+          novoUtilizador?.id ===
+          utilizador?.id
+        ) {
+          return;
+        }
+
+        utilizador =
+          novoUtilizador;
+
+        atualizarVisibilidade();
+
+        if (utilizador) {
+          await carregarColaboradores();
+        }
+      }
+    );
+}
+
+document.addEventListener(
+  "DOMContentLoaded",
+  iniciarAplicacao
+);
