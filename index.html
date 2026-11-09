@@ -1,1 +1,90 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Vista do Avaliador</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <main class="wrap">
+
+    <header class="head">
+      <h1>Vista do Avaliador</h1>
+      <p class="muted">
+        Avaliação individual com armazenamento seguro.
+      </p>
+    </header>
+
+    <section id="login" class="card">
+      <h2>Entrar</h2>
+
+      <input
+        id="email"
+        type="email"
+        autocomplete="email"
+        placeholder="E-mail"
+      >
+
+      <input
+        id="password"
+        type="password"
+        autocomplete="current-password"
+        placeholder="Password"
+      >
+
+      <p>
+        <button id="signin" class="primary">
+          Entrar
+        </button>
+
+        <button id="signup">
+          Criar conta
+        </button>
+      </p>
+
+      <p id="authMsg"></p>
+    </section>
+
+    <section id="app" class="hidden">
+
+      <div class="row">
+        <span id="who"></span>
+        <button id="logout">Sair</button>
+      </div>
+
+      <section class="card">
+        <div id="counter" class="muted"></div>
+        <h2 id="person"></h2>
+        <div id="status" class="badge"></div>
+      </section>
+
+      <div id="criteria"></div>
+
+      <nav class="actions">
+        <button id="prev">
+          Anterior
+        </button>
+
+        <button id="save" class="primary">
+          Guardar
+        </button>
+
+        <button id="next">
+          Seguinte
+        </button>
+      </nav>
+
+      <p id="msg"></p>
+
+    </section>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">\</script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
 
