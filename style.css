@@ -1,0 +1,113 @@
+:root {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.wrap {
+  max-width: 860px;
+  margin: auto;
+  padding: 24px;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 20px;
+  margin: 14px 0;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.muted {
+  color: #64748b;
+}
+
+.scores {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  gap: 7px;
+}
+
+.score,
+button,
+input {
+  min-height: 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+}
+
+.score {
+  background: white;
+  font-weight: 700;
+}
+
+.score.sel,
+.primary {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+button {
+  padding: 0 15px;
+  cursor: pointer;
+  background: white;
+}
+
+button:disabled {
+  opacity: 0.45;
+}
+
+input {
+  width: 100%;
+  padding: 9px;
+  margin: 6px 0;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  position: sticky;
+  bottom: 8px;
+  background: white;
+  padding: 12px;
+  border-radius: 16px;
+}
+
+.hidden {
+  display: none;
+}
+
+.error {
+  color: #b91c1c;
+}
+
+.ok {
+  color: #047857;
+}
+
+@media (max-width: 650px) {
+  .scores {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .wrap {
+    padding: 15px;
+  }
+}
