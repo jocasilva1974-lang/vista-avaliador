@@ -30,6 +30,12 @@ let utilizador = null;
 let colaboradores = [];
 let indiceAtual = 0;
 let classificacoes = {};
+let avaliacaoCarregada = null;
+
+
+/* ================================
+   MENSAGENS
+================================ */
 
 function mostrarMensagem(
   texto,
@@ -45,6 +51,11 @@ function mostrarMensagem(
   elemento.textContent = texto;
   elemento.className = erro ? "error" : "ok";
 }
+
+
+/* ================================
+   SUPABASE
+================================ */
 
 function configuracaoValida() {
   return (
@@ -89,8 +100,179 @@ function iniciarSupabase() {
   return true;
 }
 
+
+/* ================================
+   DATAS E CÁLCULOS
+================================ */
+
+function dataLocalISO(data = new Date()) {
+  const ano = data.getFullYear();
+
+  const mes = String(
+    data.getMonth() + 1
+  ).padStart(2, "0");
+
+  const dia = String(
+    data.getDate()
+  ).padStart(2, "0");
+
+  return `${ano}-${mes}-${dia}`;
+}
+
+function formatarData(valor) {
+  return new Intl.DateTimeFormat(
+    "pt-PT"
+  ).format(
+    new Date(
+      valor + "T12:00:00"
+    )
+  );
+}
+
+function media(valores) {
+  const numeros = valores
+    .filter(
+      (valor) =>
+        Number.isFinite(Number(valor))
+    )
+    .map(Number);
+
+  if (numeros.length === 0) {
+    return null;
+  }
+
+  return (
+    numeros.reduce(
+      (total, valor) =>
+        total + valor,
+      0
+    ) / numeros.length
+  );
+}
+
+function nota(valor) {
+  if (
+    valor === null ||
+    valor === undefined
+  ) {
+    return "—";
+  }
+
+  return Number(valor)
+    .toFixed(2)
+    .replace(".", ",");
+}
+
+
+/* ================================
+   SEMANA ISO
+================================ */
+
+function isoWeekValue(
+  data = new Date()
+) {
+  const d = new Date(
+    Date.UTC(
+      data.getFullYear(),
+      data.getMonth(),
+      data.getDate()
+    )
+  );
+
+  const diaSemana =
+    d.getUTCDay() || 7;
+
+  d.setUTCDate(
+    d.getUTCDate() +
+      4 -
+      diaSemana
+  );
+
+  const inicioAno =
+    new Date(
+      Date.UTC(
+        d.getUTCFullYear(),
+        0,
+        1
+      )
+    );
+
+  const semana =
+    Math.ceil(
+      (
+        (
+          d - inicioAno
+        ) /
+          86400000 +
+        1
+      ) /
+        7
+    );
+
+  return (
+    `${d.getUTCFullYear()}-W` +
+    String(semana).padStart(
+      2,
+      "0"
+    )
+  );
+}
+
+function periodoSemana(valor) {
+  const partes =
+    valor.split("-W");
+
+  const ano =
+    Number(partes[0]);
+
+  const semana =
+    Number(partes[1]);
+
+  const janeiro4 =
+    new Date(
+      Date.UTC(
+        ano,
+        0,
+        4
+      )
+    );
+
+  const segunda =
+    new Date(janeiro4);
+
+  segunda.setUTCDate(
+    janeiro4.getUTCDate() -
+      (janeiro4.getUTCDay() || 7) +
+      1 +
+      (semana - 1) * 7
+  );
+
+  const domingo =
+    new Date(segunda);
+
+  domingo.setUTCDate(
+    segunda.getUTCDate() + 6
+  );
+
+  return [
+    segunda
+      .toISOString()
+      .slice(0, 10),
+
+    domingo
+      .toISOString()
+      .slice(0, 10)
+  ];
+}
+
+
+/* ================================
+   AUTENTICAÇÃO
+================================ */
+
 function atualizarVisibilidade() {
-  const autenticado = Boolean(utilizador);
+  const autenticado =
+    Boolean(utilizador);
 
   $("#login").classList.toggle(
     "hidden",
@@ -114,7 +296,8 @@ async function verificarSessao() {
   }
 
   const { data, error } =
-    await supabaseClient.auth.getSession();
+    await supabaseClient.auth
+      .getSession();
 
   if (error) {
     mostrarMensagem(
@@ -127,7 +310,8 @@ async function verificarSessao() {
   }
 
   utilizador =
-    data.session?.user || null;
+    data.session?.user ||
+    null;
 
   atualizarVisibilidade();
 
@@ -135,6 +319,11 @@ async function verificarSessao() {
     await carregarColaboradores();
   }
 }
+
+
+/* ================================
+   COLABORADORES
+================================ */
 
 async function carregarColaboradores() {
   mostrarMensagem(
@@ -144,11 +333,19 @@ async function carregarColaboradores() {
   const { data, error } =
     await supabaseClient
       .from("colaboradores")
-      .select("id, numero, nome")
-      .eq("ativo", true)
-      .order("numero", {
-        ascending: true
-      });
+      .select(
+        "id, numero, nome"
+      )
+      .eq(
+        "ativo",
+        true
+      )
+      .order(
+        "numero",
+        {
+          ascending: true
+        }
+      );
 
   if (error) {
     mostrarMensagem(
@@ -160,9 +357,12 @@ async function carregarColaboradores() {
     return;
   }
 
-  colaboradores = data || [];
+  colaboradores =
+    data || [];
 
-  if (colaboradores.length === 0) {
+  if (
+    colaboradores.length === 0
+  ) {
     mostrarMensagem(
       "Não existem colaboradores ativos.",
       true
@@ -173,18 +373,57 @@ async function carregarColaboradores() {
 
   indiceAtual = 0;
 
+  preencherColaboradoresResultados();
+
+  mostrarMensagem("");
+
   await apresentarColaborador();
 }
+
+function preencherColaboradoresResultados() {
+  $("#resultPerson").innerHTML =
+    colaboradores
+      .map(
+        (colaborador) => `
+          
+            ${colaborador.numero} - ${colaborador.nome}
+          
+        `
+      )
+      .join("");
+}
+
+
+/* ================================
+   CARREGAR AVALIAÇÃO
+================================ */
 
 async function carregarAvaliacaoAtual() {
   const colaborador =
     colaboradores[indiceAtual];
 
+  const dataAvaliacao =
+    $("#evaluationDate").value;
+
+  const sessao =
+    Number(
+      $("#weeklySlot").value
+    );
+
   const { data, error } =
     await supabaseClient
       .from("avaliacoes")
       .select(
-        "entrega, execucao, qualidade, respeito, estado"
+        `
+        id,
+        entrega,
+        execucao,
+        qualidade,
+        respeito,
+        estado,
+        data_avaliacao,
+        sessao_semana
+        `
       )
       .eq(
         "avaliador_id",
@@ -193,6 +432,14 @@ async function carregarAvaliacaoAtual() {
       .eq(
         "colaborador_id",
         colaborador.id
+      )
+      .eq(
+        "data_avaliacao",
+        dataAvaliacao
+      )
+      .eq(
+        "sessao_semana",
+        sessao
       )
       .maybeSingle();
 
@@ -209,24 +456,29 @@ async function carregarAvaliacaoAtual() {
   return data;
 }
 
-function criarBotoesClassificacao(campo) {
+
+/* ================================
+   BOTÕES DAS NOTAS
+================================ */
+
+function criarBotoesClassificacao(
+  campo
+) {
   return Array.from(
-    { length: 11 },
-    (_, nota) => {
+    {
+      length: 11
+    },
+    (_, notaAtual) => {
       const selecionado =
-        classificacoes[campo] === nota
+        classificacoes[campo] ===
+        notaAtual
           ? "sel"
           : "";
 
       return `
-        <button
-          type="button"
-          class="score ${selecionado}"
-          onclick="selecionarNota('${campo}', ${nota})"
-          aria-label="${campo}: ${nota}"
-        >
-          ${nota}
-        </button>
+        
+          ${notaAtual}
+        
       `;
     }
   ).join("");
@@ -240,19 +492,25 @@ function criarCriteriosHTML() {
         titulo,
         descricao
       }) => `
-        <section class="card">
-          <h3>${titulo}</h3>
+        
 
-          <p class="muted">
+          
+            ${titulo}
+          
+
+          
             ${descricao}
-          </p>
+          
 
-          <div class="scores">
+          
+
             ${criarBotoesClassificacao(
               campo
             )}
-          </div>
-        </section>
+
+          
+
+        
       `
     )
     .join("");
@@ -267,16 +525,102 @@ function avaliacaoCompleta() {
   );
 }
 
+
+/* ================================
+   RESUMO DA AVALIAÇÃO
+================================ */
+
+function atualizarResumo() {
+  const caixa =
+    $("#liveSummary");
+
+  if (!avaliacaoCompleta()) {
+    caixa.classList.add(
+      "hidden"
+    );
+
+    caixa.innerHTML = "";
+
+    return;
+  }
+
+  const resultadoGeral =
+    media(
+      criterios.map(
+        ({ campo }) =>
+          classificacoes[campo]
+      )
+    );
+
+  caixa.innerHTML = `
+    
+      Resumo desta avaliação
+    
+
+    
+
+      ${criterios
+        .map(
+          ({
+            campo,
+            titulo
+          }) => `
+            
+
+              ${titulo}
+
+              
+                ${nota(
+                  classificacoes[
+                    campo
+                  ]
+                )}
+              
+
+            
+          `
+        )
+        .join("")}
+
+      
+
+        Média
+
+        
+          ${nota(
+            resultadoGeral
+          )}
+        
+
+      
+
+    
+  `;
+
+  caixa.classList.remove(
+    "hidden"
+  );
+}
+
 function atualizarCriterios() {
   $("#criteria").innerHTML =
     criarCriteriosHTML();
 
   $("#save").disabled =
     !avaliacaoCompleta();
+
+  atualizarResumo();
 }
 
+
+/* ================================
+   APRESENTAR COLABORADOR
+================================ */
+
 async function apresentarColaborador() {
-  if (colaboradores.length === 0) {
+  if (
+    colaboradores.length === 0
+  ) {
     return;
   }
 
@@ -284,7 +628,11 @@ async function apresentarColaborador() {
     colaboradores[indiceAtual];
 
   $("#counter").textContent =
-    `Colaborador ${indiceAtual + 1} de ${colaboradores.length}`;
+    `Colaborador ${
+      indiceAtual + 1
+    } de ${
+      colaboradores.length
+    }`;
 
   $("#person").textContent =
     `${colaborador.numero} - ${colaborador.nome}`;
@@ -303,37 +651,57 @@ async function apresentarColaborador() {
 
   mostrarMensagem("");
 
-  const avaliacao =
+  avaliacaoCarregada =
     await carregarAvaliacaoAtual();
 
-  classificacoes = avaliacao
-    ? {
-        entrega: avaliacao.entrega,
-        execucao: avaliacao.execucao,
-        qualidade: avaliacao.qualidade,
-        respeito: avaliacao.respeito
-      }
-    : {};
+  classificacoes =
+    avaliacaoCarregada
+      ? {
+          entrega:
+            avaliacaoCarregada.entrega,
+
+          execucao:
+            avaliacaoCarregada.execucao,
+
+          qualidade:
+            avaliacaoCarregada.qualidade,
+
+          respeito:
+            avaliacaoCarregada.respeito
+        }
+      : {};
 
   $("#status").textContent =
-    avaliacao?.estado === "concluida"
-      ? "Avaliação guardada"
-      : "Por preencher";
+    avaliacaoCarregada
+      ? "Avaliação já guardada; podes atualizá-la"
+      : "Nova avaliação por preencher";
 
   atualizarCriterios();
 }
 
-window.selecionarNota = function (
-  campo,
-  nota
-) {
-  classificacoes[campo] = nota;
 
-  $("#status").textContent =
-    "Alterações por guardar";
+/* ================================
+   SELECIONAR NOTA
+================================ */
 
-  atualizarCriterios();
-};
+window.selecionarNota =
+  function (
+    campo,
+    valor
+  ) {
+    classificacoes[campo] =
+      valor;
+
+    $("#status").textContent =
+      "Alterações por guardar";
+
+    atualizarCriterios();
+  };
+
+
+/* ================================
+   GUARDAR AVALIAÇÃO
+================================ */
 
 async function guardarAvaliacao() {
   if (!avaliacaoCompleta()) {
@@ -348,7 +716,9 @@ async function guardarAvaliacao() {
   const colaborador =
     colaboradores[indiceAtual];
 
-  $("#save").disabled = true;
+  $("#save").disabled =
+    true;
+
   $("#save").textContent =
     "A guardar...";
 
@@ -358,6 +728,14 @@ async function guardarAvaliacao() {
 
     colaborador_id:
       colaborador.id,
+
+    data_avaliacao:
+      $("#evaluationDate").value,
+
+    sessao_semana:
+      Number(
+        $("#weeklySlot").value
+      ),
 
     entrega:
       classificacoes.entrega,
@@ -378,16 +756,18 @@ async function guardarAvaliacao() {
       new Date().toISOString()
   };
 
-  const { error } =
+  const { data, error } =
     await supabaseClient
       .from("avaliacoes")
       .upsert(
         registo,
         {
           onConflict:
-            "avaliador_id,colaborador_id"
+            "avaliador_id,colaborador_id,data_avaliacao,sessao_semana"
         }
-      );
+      )
+      .select("id")
+      .single();
 
   $("#save").textContent =
     "Guardar";
@@ -405,6 +785,9 @@ async function guardarAvaliacao() {
     return;
   }
 
+  avaliacaoCarregada =
+    data;
+
   $("#status").textContent =
     "Avaliação guardada";
 
@@ -413,7 +796,14 @@ async function guardarAvaliacao() {
   );
 }
 
-async function navegar(direcao) {
+
+/* ================================
+   NAVEGAÇÃO
+================================ */
+
+async function navegar(
+  direcao
+) {
   const novoIndice =
     indiceAtual + direcao;
 
@@ -425,7 +815,8 @@ async function navegar(direcao) {
     return;
   }
 
-  indiceAtual = novoIndice;
+  indiceAtual =
+    novoIndice;
 
   await apresentarColaborador();
 
@@ -435,14 +826,24 @@ async function navegar(direcao) {
   });
 }
 
+
+/* ================================
+   LOGIN
+================================ */
+
 async function entrar() {
   const email =
-    $("#email").value.trim();
+    $("#email")
+      .value
+      .trim();
 
   const password =
     $("#password").value;
 
-  if (!email || !password) {
+  if (
+    !email ||
+    !password
+  ) {
     mostrarMensagem(
       "Introduz o e-mail e a password.",
       true,
@@ -452,7 +853,9 @@ async function entrar() {
     return;
   }
 
-  $("#signin").disabled = true;
+  $("#signin").disabled =
+    true;
+
   $("#signin").textContent =
     "A entrar...";
 
@@ -463,7 +866,9 @@ async function entrar() {
         password
       });
 
-  $("#signin").disabled = false;
+  $("#signin").disabled =
+    false;
+
   $("#signin").textContent =
     "Entrar";
 
@@ -491,75 +896,10 @@ async function entrar() {
   await carregarColaboradores();
 }
 
-async function criarConta() {
-  const email =
-    $("#email").value.trim();
 
-  const password =
-    $("#password").value;
-
-  if (!email || !password) {
-    mostrarMensagem(
-      "Introduz o e-mail e uma password.",
-      true,
-      "#authMsg"
-    );
-
-    return;
-  }
-
-  if (password.length < 6) {
-    mostrarMensagem(
-      "A password deve ter pelo menos 6 caracteres.",
-      true,
-      "#authMsg"
-    );
-
-    return;
-  }
-
-  $("#signup").disabled = true;
-  $("#signup").textContent =
-    "A criar...";
-
-  const { data, error } =
-    await supabaseClient.auth
-      .signUp({
-        email,
-        password
-      });
-
-  $("#signup").disabled = false;
-  $("#signup").textContent =
-    "Criar conta";
-
-  if (error) {
-    mostrarMensagem(
-      error.message,
-      true,
-      "#authMsg"
-    );
-
-    return;
-  }
-
-  if (data.session) {
-    utilizador =
-      data.user;
-
-    atualizarVisibilidade();
-
-    await carregarColaboradores();
-
-    return;
-  }
-
-  mostrarMensagem(
-    "Conta criada. Confirma o e-mail antes de entrar, se essa opção estiver ativa no Supabase.",
-    false,
-    "#authMsg"
-  );
-}
+/* ================================
+   LOGOUT
+================================ */
 
 async function sair() {
   const { error } =
@@ -592,17 +932,461 @@ async function sair() {
   );
 }
 
+
+/* ================================
+   VISTAS
+================================ */
+
+function trocarVista(
+  mostrarResultados
+) {
+  $("#evaluateView")
+    .classList
+    .toggle(
+      "hidden",
+      mostrarResultados
+    );
+
+  $("#resultsView")
+    .classList
+    .toggle(
+      "hidden",
+      !mostrarResultados
+    );
+
+  $("#tabEvaluate")
+    .classList
+    .toggle(
+      "active",
+      !mostrarResultados
+    );
+
+  $("#tabResults")
+    .classList
+    .toggle(
+      "active",
+      mostrarResultados
+    );
+}
+
+
+/* ================================
+   FILTRO DO PERÍODO
+================================ */
+
+function atualizarFiltroPeriodo() {
+  const periodo =
+    $("#resultPeriod").value;
+
+  $("#weekField")
+    .classList
+    .toggle(
+      "hidden",
+      periodo === "month"
+    );
+
+  $("#monthField")
+    .classList
+    .toggle(
+      "hidden",
+      periodo !== "month"
+    );
+}
+
+
+/* ================================
+   RESULTADOS
+================================ */
+
+async function carregarResultados() {
+  const colaboradorId =
+    $("#resultPerson").value;
+
+  const periodo =
+    $("#resultPeriod").value;
+
+  let inicio;
+  let fim;
+
+  if (
+    periodo === "month"
+  ) {
+    const partes =
+      $("#resultMonth")
+        .value
+        .split("-")
+        .map(Number);
+
+    const ano =
+      partes[0];
+
+    const mes =
+      partes[1];
+
+    inicio =
+      `${ano}-${String(mes)
+        .padStart(2, "0")}-01`;
+
+    fim =
+      dataLocalISO(
+        new Date(
+          ano,
+          mes,
+          0
+        )
+      );
+
+  } else {
+    [
+      inicio,
+      fim
+    ] =
+      periodoSemana(
+        $("#resultWeek").value
+      );
+  }
+
+  mostrarMensagem(
+    "A calcular...",
+    false,
+    "#resultsMsg"
+  );
+
+  const { data, error } =
+    await supabaseClient
+      .from("avaliacoes")
+      .select(
+        `
+        id,
+        data_avaliacao,
+        sessao_semana,
+        entrega,
+        execucao,
+        qualidade,
+        respeito,
+        avaliador_id
+        `
+      )
+      .eq(
+        "colaborador_id",
+        colaboradorId
+      )
+      .eq(
+        "estado",
+        "concluida"
+      )
+      .gte(
+        "data_avaliacao",
+        inicio
+      )
+      .lte(
+        "data_avaliacao",
+        fim
+      )
+      .order(
+        "data_avaliacao",
+        {
+          ascending: false
+        }
+      );
+
+  if (error) {
+    mostrarMensagem(
+      "Não foi possível carregar resultados: " +
+        error.message,
+      true,
+      "#resultsMsg"
+    );
+
+    return;
+  }
+
+  const registos =
+    data || [];
+
+  if (
+    registos.length === 0
+  ) {
+    $("#resultsOutput")
+      .innerHTML = `
+        
+          Não existem avaliações
+          nesse período.
+        
+      `;
+
+    mostrarMensagem(
+      "",
+      false,
+      "#resultsMsg"
+    );
+
+    return;
+  }
+
+
+  /* ----------------------------
+     NOMES DOS AVALIADORES
+  ---------------------------- */
+
+  const idsAvaliadores = [
+    ...new Set(
+      registos.map(
+        (registo) =>
+          registo.avaliador_id
+      )
+    )
+  ];
+
+  let perfis = [];
+
+  if (
+    idsAvaliadores.length > 0
+  ) {
+    const resposta =
+      await supabaseClient
+        .from(
+          "perfis_avaliadores"
+        )
+        .select(
+          "id, nome"
+        )
+        .in(
+          "id",
+          idsAvaliadores
+        );
+
+    perfis =
+      resposta.data || [];
+  }
+
+  const nomesAvaliadores =
+    Object.fromEntries(
+      perfis.map(
+        (perfil) => [
+          perfil.id,
+          perfil.nome
+        ]
+      )
+    );
+
+
+  /* ----------------------------
+     MÉDIAS
+  ---------------------------- */
+
+  const medias = {};
+
+  criterios.forEach(
+    ({
+      campo
+    }) => {
+      medias[campo] =
+        media(
+          registos.map(
+            (registo) =>
+              registo[campo]
+          )
+        );
+    }
+  );
+
+  medias.geral =
+    media(
+      criterios.map(
+        ({
+          campo
+        }) =>
+          medias[campo]
+      )
+    );
+
+
+  /* ----------------------------
+     NÚMERO DE AVALIADORES
+  ---------------------------- */
+
+  const numeroAvaliadores =
+    new Set(
+      registos.map(
+        (registo) =>
+          registo.avaliador_id
+      )
+    ).size;
+
+
+  /* ----------------------------
+     CARTÕES
+  ---------------------------- */
+
+  const cartoes = `
+    
+
+      ${criterios
+        .map(
+          ({
+            campo,
+            titulo
+          }) => `
+            
+
+              ${titulo}
+
+              
+                ${nota(
+                  medias[campo]
+                )}
+              
+
+            
+          `
+        )
+        .join("")}
+
+      
+
+        Resultado geral
+
+        
+          ${nota(
+            medias.geral
+          )}
+        
+
+      
+
+    
+  `;
+
+
+  /* ----------------------------
+     HISTÓRICO
+  ---------------------------- */
+
+  const linhas =
+    registos
+      .map(
+        (registo) => {
+          const mediaAvaliacao =
+            media(
+              criterios.map(
+                ({
+                  campo
+                }) =>
+                  registo[campo]
+              )
+            );
+
+          const nomeAvaliador =
+            nomesAvaliadores[
+              registo.avaliador_id
+            ] ||
+            "Avaliador";
+
+          return `
+            
+
+              
+                ${formatarData(
+                  registo.data_avaliacao
+                )}
+              
+
+              
+                ${nomeAvaliador}
+              
+
+              
+                ${registo.sessao_semana}
+              
+
+              
+                ${nota(
+                  mediaAvaliacao
+                )}
+              
+
+            
+          `;
+        }
+      )
+      .join("");
+
+
+  let tituloResultado =
+    "Avaliações individuais";
+
+  if (
+    periodo === "week"
+  ) {
+    tituloResultado =
+      "Resultado semanal";
+  }
+
+  if (
+    periodo === "month"
+  ) {
+    tituloResultado =
+      "Resultado mensal";
+  }
+
+
+  $("#resultsOutput")
+    .innerHTML = `
+
+      
+        ${tituloResultado}
+      
+
+      
+        ${registos.length}
+        avaliação(ões),
+        realizadas por
+        ${numeroAvaliadores}
+        de 4 avaliadores.
+      
+
+      ${cartoes}
+
+      
+
+        
+
+          
+            
+              Data
+              Avaliador
+              Sessão
+              Média
+            
+          
+
+          
+            ${linhas}
+          
+
+        
+
+      
+    `;
+
+  mostrarMensagem(
+    "",
+    false,
+    "#resultsMsg"
+  );
+}
+
+
+/* ================================
+   EVENTOS
+================================ */
+
 function configurarEventos() {
   $("#signin")
     .addEventListener(
       "click",
       entrar
-    );
-
-  $("#signup")
-    .addEventListener(
-      "click",
-      criarConta
     );
 
   $("#logout")
@@ -620,13 +1404,15 @@ function configurarEventos() {
   $("#prev")
     .addEventListener(
       "click",
-      () => navegar(-1)
+      () =>
+        navegar(-1)
     );
 
   $("#next")
     .addEventListener(
       "click",
-      () => navegar(1)
+      () =>
+        navegar(1)
     );
 
   $("#password")
@@ -634,52 +1420,70 @@ function configurarEventos() {
       "keydown",
       (evento) => {
         if (
-          evento.key === "Enter"
+          evento.key ===
+          "Enter"
         ) {
           entrar();
         }
       }
     );
-}
 
-async function iniciarAplicacao() {
-  if (!iniciarSupabase()) {
-    return;
-  }
+  $("#evaluationDate")
+    .addEventListener(
+      "change",
+      apresentarColaborador
+    );
 
-  configurarEventos();
+  $("#weeklySlot")
+    .addEventListener(
+      "change",
+      apresentarColaborador
+    );
 
-  await verificarSessao();
+  $("#tabEvaluate")
+    .addEventListener(
+      "click",
+      () =>
+        trocarVista(false)
+    );
 
-  supabaseClient.auth
-    .onAuthStateChange(
-      async (
-        _evento,
-        sessao
-      ) => {
-        const novoUtilizador =
-          sessao?.user || null;
+  $("#tabResults")
+    .addEventListener(
+      "click",
+      () =>
+        trocarVista(true)
+    );
 
-        if (
-          novoUtilizador?.id ===
-          utilizador?.id
-        ) {
-          return;
-        }
+  $("#resultPeriod")
+    .addEventListener(
+      "change",
+      atualizarFiltroPeriodo
+    );
 
-        utilizador =
-          novoUtilizador;
-
-        atualizarVisibilidade();
-
-        if (utilizador) {
-          await carregarColaboradores();
-        }
-      }
+  $("#loadResults")
+    .addEventListener(
+      "click",
+      carregarResultados
     );
 }
 
-document.addEventListener(
-  "DOMContentLoaded",
-  iniciarAplicacao
-);
+
+/* ================================
+   INICIAR APLICAÇÃO
+================================ */
+
+async function iniciarAplicacao() {
+  if (
+    !iniciarSupabase()
+  ) {
+    return;
+  }
+
+  $("#evaluationDate").value =
+    dataLocalISO();
+
+  $("#resultWeek").value =
+    isoWeekValue();
+
+  $("#resultMonth").value =
+    data
