@@ -33,8 +33,16 @@ body {
   gap: 12px;
 }
 
+.topbar {
+  overflow-wrap: anywhere;
+}
+
 .muted {
   color: #64748b;
+}
+
+.small {
+  font-size: 0.9rem;
 }
 
 .scores {
@@ -45,7 +53,8 @@ body {
 
 .score,
 button,
-input {
+input,
+select {
   min-height: 42px;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
@@ -54,10 +63,12 @@ input {
 .score {
   background: white;
   font-weight: 700;
+  padding: 0;
 }
 
 .score.sel,
-.primary {
+.primary,
+.tab.active {
   background: #2563eb;
   color: white;
   border-color: #2563eb;
@@ -71,12 +82,20 @@ button {
 
 button:disabled {
   opacity: 0.45;
+  cursor: not-allowed;
 }
 
-input {
+input,
+select {
   width: 100%;
   padding: 9px;
   margin: 6px 0;
+  background: white;
+  color: #0f172a;
+}
+
+label {
+  font-weight: 600;
 }
 
 .actions {
@@ -88,10 +107,75 @@ input {
   background: white;
   padding: 12px;
   border-radius: 16px;
+  box-shadow: 0 4px 20px #0f172a18;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.summary h3 {
+  margin-top: 0;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.metric {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+}
+
+.metric strong {
+  display: block;
+  font-size: 1.35rem;
+  margin-top: 5px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.result-list {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.result-list th,
+.result-list td {
+  text-align: left;
+  padding: 9px 6px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .error {
@@ -109,5 +193,17 @@ input {
 
   .wrap {
     padding: 15px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .result-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .result-list {
+    font-size: 0.8rem;
   }
 }
