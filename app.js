@@ -1,4 +1,5 @@
 const config = window.APP_CONFIG || {};
+
 const $ = (selector) => document.querySelector(selector);
 
 const criterios = [
@@ -29,22 +30,31 @@ let utilizador = null;
 let colaboradores = [];
 let indiceAtual = 0;
 let classificacoes = {};
-let modoRecuperacao = false;
 
 
-/* MENSAGENS */
+/* =========================
+   MENSAGENS
+========================= */
 
-function mostrarMensagem(texto, erro = false, destino = "#msg") {
+function mostrarMensagem(
+  texto,
+  erro = false,
+  destino = "#msg"
+) {
   const elemento = $(destino);
 
-  if (!elemento) return;
+  if (!elemento) {
+    return;
+  }
 
   elemento.textContent = texto;
   elemento.className = erro ? "error" : "ok";
 }
 
 
-/* SUPABASE */
+/* =========================
+   SUPABASE
+========================= */
 
 function configuracaoValida() {
   return (
@@ -55,6 +65,7 @@ function configuracaoValida() {
   );
 }
 
+
 function iniciarSupabase() {
   if (!configuracaoValida()) {
     mostrarMensagem(
@@ -62,6 +73,7 @@ function iniciarSupabase() {
       true,
       "#authMsg"
     );
+
     return false;
   }
 
@@ -74,6 +86,7 @@ function iniciarSupabase() {
       true,
       "#authMsg"
     );
+
     return false;
   }
 
@@ -86,36 +99,59 @@ function iniciarSupabase() {
 }
 
 
-/* DATAS */
+/* =========================
+   DATAS
+========================= */
 
 function dataLocalISO(data = new Date()) {
   const ano = data.getFullYear();
-  const mes = String(data.getMonth() + 1).padStart(2, "0");
-  const dia = String(data.getDate()).padStart(2, "0");
+
+  const mes = String(
+    data.getMonth() + 1
+  ).padStart(2, "0");
+
+  const dia = String(
+    data.getDate()
+  ).padStart(2, "0");
 
   return `${ano}-${mes}-${dia}`;
 }
 
-function formatarData(valor) {
-  if (!valor) return "";
 
-  return new Intl.DateTimeFormat("pt-PT").format(
-    new Date(valor + "T12:00:00")
+function formatarData(valor) {
+  if (!valor) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat(
+    "pt-PT"
+  ).format(
+    new Date(
+      valor + "T12:00:00"
+    )
   );
 }
+
 
 function calcularMedia(valores) {
   const numeros = valores
     .map(Number)
-    .filter((valor) => Number.isFinite(valor));
+    .filter(
+      (valor) => Number.isFinite(valor)
+    );
 
-  if (numeros.length === 0) return null;
+  if (numeros.length === 0) {
+    return null;
+  }
 
-  return numeros.reduce(
+  const total = numeros.reduce(
     (soma, valor) => soma + valor,
     0
-  ) / numeros.length;
+  );
+
+  return total / numeros.length;
 }
+
 
 function apresentarNota(valor) {
   if (
@@ -131,7 +167,9 @@ function apresentarNota(valor) {
 }
 
 
-/* SEMANAS */
+/* =========================
+   SEMANA
+========================= */
 
 function semanaAtualISO(data = new Date()) {
   const copia = new Date(
@@ -142,10 +180,13 @@ function semanaAtualISO(data = new Date()) {
     )
   );
 
-  const diaSemana = copia.getUTCDay() || 7;
+  const diaSemana =
+    copia.getUTCDay() || 7;
 
   copia.setUTCDate(
-    copia.getUTCDate() + 4 - diaSemana
+    copia.getUTCDate() +
+    4 -
+    diaSemana
   );
 
   const primeiroDia = new Date(
@@ -172,57 +213,84 @@ function semanaAtualISO(data = new Date()) {
   );
 }
 
+
 function datasDaSemana(valorSemana) {
-  const partes = valorSemana.split("-W");
+  const partes =
+    valorSemana.split("-W");
 
-  const ano = Number(partes[0]);
-  const numeroSemana = Number(partes[1]);
+  const ano =
+    Number(partes[0]);
 
-  const quatroJaneiro = new Date(
-    Date.UTC(ano, 0, 4)
-  );
+  const numeroSemana =
+    Number(partes[1]);
 
-  const segunda = new Date(quatroJaneiro);
+  const quatroJaneiro =
+    new Date(
+      Date.UTC(
+        ano,
+        0,
+        4
+      )
+    );
+
+  const segunda =
+    new Date(quatroJaneiro);
 
   segunda.setUTCDate(
     quatroJaneiro.getUTCDate() -
-    (quatroJaneiro.getUTCDay() || 7) +
+    (
+      quatroJaneiro.getUTCDay() || 7
+    ) +
     1 +
-    (numeroSemana - 1) * 7
+    (
+      numeroSemana - 1
+    ) * 7
   );
 
-  const domingo = new Date(segunda);
+  const domingo =
+    new Date(segunda);
 
   domingo.setUTCDate(
     segunda.getUTCDate() + 6
   );
 
   return {
-    inicio: segunda.toISOString().slice(0, 10),
-    fim: domingo.toISOString().slice(0, 10)
+    inicio:
+      segunda
+        .toISOString()
+        .slice(0, 10),
+
+    fim:
+      domingo
+        .toISOString()
+        .slice(0, 10)
   };
 }
 
 
-/* VISIBILIDADE */
+/* =========================
+   VISIBILIDADE
+========================= */
 
 function atualizarVisibilidade() {
-  const autenticado = Boolean(utilizador);
+  const autenticado =
+    Boolean(utilizador);
 
   $("#login").classList.toggle(
     "hidden",
-    autenticado || modoRecuperacao
-  );
-
-  $("#passwordRecovery").classList.toggle(
-    "hidden",
-    !modoRecuperacao
+    autenticado
   );
 
   $("#app").classList.toggle(
     "hidden",
-    !autenticado || modoRecuperacao
+    !autenticado
   );
+
+  if ($("#passwordRecovery")) {
+    $("#passwordRecovery").classList.add(
+      "hidden"
+    );
+  }
 
   if (autenticado) {
     $("#who").textContent =
@@ -231,7 +299,9 @@ function atualizarVisibilidade() {
 }
 
 
-/* SESSÃO */
+/* =========================
+   SESSÃO
+========================= */
 
 async function verificarSessao() {
   const resposta =
@@ -243,24 +313,25 @@ async function verificarSessao() {
       true,
       "#authMsg"
     );
+
     return;
   }
 
   utilizador =
-    resposta.data.session?.user || null;
+    resposta.data.session?.user ||
+    null;
 
   atualizarVisibilidade();
 
-  if (
-    utilizador &&
-    !modoRecuperacao
-  ) {
+  if (utilizador) {
     await carregarAtletas();
   }
 }
 
 
-/* LOGIN */
+/* =========================
+   LOGIN
+========================= */
 
 async function entrar() {
   const email =
@@ -275,18 +346,27 @@ async function entrar() {
       true,
       "#authMsg"
     );
+
     return;
   }
 
+  mostrarMensagem(
+    "",
+    false,
+    "#authMsg"
+  );
+
   $("#signin").disabled = true;
-  $("#signin").textContent = "A entrar...";
+  $("#signin").textContent =
+    "A entrar...";
 
   try {
     const resposta =
-      await supabaseClient.auth.signInWithPassword({
-        email,
-        password
-      });
+      await supabaseClient.auth
+        .signInWithPassword({
+          email,
+          password
+        });
 
     if (resposta.error) {
       mostrarMensagem(
@@ -294,13 +374,12 @@ async function entrar() {
         true,
         "#authMsg"
       );
+
       return;
     }
 
-    utilizador = resposta.data.user;
-    modoRecuperacao = false;
-
-    mostrarMensagem("", false, "#authMsg");
+    utilizador =
+      resposta.data.user;
 
     atualizarVisibilidade();
 
@@ -309,19 +388,25 @@ async function entrar() {
   } catch (erro) {
     mostrarMensagem(
       "Não foi possível entrar: " +
-      (erro?.message || "erro desconhecido"),
+      (
+        erro?.message ||
+        "erro desconhecido"
+      ),
       true,
       "#authMsg"
     );
 
   } finally {
     $("#signin").disabled = false;
-    $("#signin").textContent = "Entrar";
+    $("#signin").textContent =
+      "Entrar";
   }
 }
 
 
-/* LOGOUT */
+/* =========================
+   SAIR
+========================= */
 
 async function sair() {
   const resposta =
@@ -332,6 +417,7 @@ async function sair() {
       resposta.error.message,
       true
     );
+
     return;
   }
 
@@ -339,7 +425,6 @@ async function sair() {
   colaboradores = [];
   classificacoes = {};
   indiceAtual = 0;
-  modoRecuperacao = false;
 
   $("#email").value = "";
   $("#password").value = "";
@@ -354,132 +439,9 @@ async function sair() {
 }
 
 
-/* ALTERAR PASSWORD */
-
-function abrirAlteracaoPassword() {
-  if (!utilizador) {
-    return;
-  }
-
-  modoRecuperacao = true;
-
-  $("#newPassword").value = "";
-  $("#confirmPassword").value = "";
-
-  mostrarMensagem(
-    "",
-    false,
-    "#passwordMsg"
-  );
-
-  atualizarVisibilidade();
-
-  $("#newPassword").focus();
-}
-
-
-function cancelarAlteracaoPassword() {
-  modoRecuperacao = false;
-
-  $("#newPassword").value = "";
-  $("#confirmPassword").value = "";
-
-  mostrarMensagem(
-    "",
-    false,
-    "#passwordMsg"
-  );
-
-  atualizarVisibilidade();
-}
-
-
-async function guardarNovaPassword() {
-  const novaPassword =
-    $("#newPassword").value;
-
-  const confirmarPassword =
-    $("#confirmPassword").value;
-
-  if (!novaPassword || !confirmarPassword) {
-    mostrarMensagem(
-      "Preenche os dois campos da password.",
-      true,
-      "#passwordMsg"
-    );
-    return;
-  }
-
-  if (novaPassword.length < 6) {
-    mostrarMensagem(
-      "A password deve ter pelo menos 6 caracteres.",
-      true,
-      "#passwordMsg"
-    );
-    return;
-  }
-
-  if (novaPassword !== confirmarPassword) {
-    mostrarMensagem(
-      "As passwords não coincidem.",
-      true,
-      "#passwordMsg"
-    );
-    return;
-  }
-
-  $("#savePassword").disabled = true;
-  $("#savePassword").textContent =
-    "A guardar...";
-
-  try {
-    const resposta =
-      await supabaseClient.auth.updateUser({
-        password: novaPassword
-      });
-
-    if (resposta.error) {
-      mostrarMensagem(
-        "Não foi possível alterar a password: " +
-        resposta.error.message,
-        true,
-        "#passwordMsg"
-      );
-      return;
-    }
-
-    utilizador =
-      resposta.data.user ||
-      utilizador;
-
-    $("#newPassword").value = "";
-    $("#confirmPassword").value = "";
-
-    modoRecuperacao = false;
-
-    atualizarVisibilidade();
-
-    mostrarMensagem(
-      "Password alterada com sucesso."
-    );
-
-  } catch (erro) {
-    mostrarMensagem(
-      "Não foi possível alterar a password: " +
-      (erro?.message || "erro desconhecido"),
-      true,
-      "#passwordMsg"
-    );
-
-  } finally {
-    $("#savePassword").disabled = false;
-    $("#savePassword").textContent =
-      "Guardar nova password";
-  }
-}
-
-
-/* ATLETAS */
+/* =========================
+   ATLETAS
+========================= */
 
 async function carregarAtletas() {
   mostrarMensagem(
@@ -489,8 +451,13 @@ async function carregarAtletas() {
   const resposta =
     await supabaseClient
       .from("atletas")
-      .select("id, numero, nome")
-      .eq("ativo", true)
+      .select(
+        "id, numero, nome"
+      )
+      .eq(
+        "ativo",
+        true
+      )
       .order(
         "numero",
         {
@@ -504,6 +471,7 @@ async function carregarAtletas() {
       resposta.error.message,
       true
     );
+
     return;
   }
 
@@ -515,6 +483,7 @@ async function carregarAtletas() {
       "Não existem atletas ativos.",
       true
     );
+
     return;
   }
 
@@ -542,7 +511,9 @@ function preencherListaResultados() {
 }
 
 
-/* AVALIAÇÃO */
+/* =========================
+   AVALIAÇÃO ATUAL
+========================= */
 
 async function carregarAvaliacaoAtual() {
   const colaborador =
@@ -586,6 +557,7 @@ async function carregarAvaliacaoAtual() {
       resposta.error.message,
       true
     );
+
     return null;
   }
 
@@ -593,11 +565,15 @@ async function carregarAvaliacaoAtual() {
 }
 
 
-/* CLASSIFICAÇÕES */
+/* =========================
+   CLASSIFICAÇÕES
+========================= */
 
 function criarBotoesClassificacao(campo) {
   return Array.from(
-    { length: 11 },
+    {
+      length: 11
+    },
     (_, numero) => {
       const selecionado =
         classificacoes[campo] === numero
@@ -696,7 +672,9 @@ function atualizarCriterios() {
 }
 
 
-/* RESUMO */
+/* =========================
+   RESUMO
+========================= */
 
 function atualizarResumo() {
   const caixa =
@@ -773,7 +751,9 @@ function atualizarResumo() {
 }
 
 
-/* APRESENTAR ATLETA */
+/* =========================
+   APRESENTAR ATLETA
+========================= */
 
 async function apresentarAtleta() {
   if (colaboradores.length === 0) {
@@ -800,7 +780,8 @@ async function apresentarAtleta() {
     indiceAtual ===
     colaboradores.length - 1;
 
-  $("#save").disabled = true;
+  $("#save").disabled =
+    true;
 
   $("#status").textContent =
     "A carregar...";
@@ -839,7 +820,9 @@ async function apresentarAtleta() {
 }
 
 
-/* GUARDAR AVALIAÇÃO */
+/* =========================
+   GUARDAR AVALIAÇÃO
+========================= */
 
 async function guardarAvaliacao() {
   if (!avaliacaoCompleta()) {
@@ -847,6 +830,7 @@ async function guardarAvaliacao() {
       "Preenche os quatro critérios antes de guardar.",
       true
     );
+
     return;
   }
 
@@ -914,6 +898,7 @@ async function guardarAvaliacao() {
       resposta.error.message,
       true
     );
+
     return;
   }
 
@@ -926,7 +911,9 @@ async function guardarAvaliacao() {
 }
 
 
-/* NAVEGAÇÃO */
+/* =========================
+   NAVEGAÇÃO
+========================= */
 
 async function navegar(direcao) {
   const novoIndice =
@@ -939,7 +926,8 @@ async function navegar(direcao) {
     return;
   }
 
-  indiceAtual = novoIndice;
+  indiceAtual =
+    novoIndice;
 
   await apresentarAtleta();
 
@@ -950,7 +938,9 @@ async function navegar(direcao) {
 }
 
 
-/* VISTAS */
+/* =========================
+   VISTAS
+========================= */
 
 function trocarVista(resultados) {
   $("#evaluateView").classList.toggle(
@@ -991,7 +981,9 @@ function atualizarFiltroPeriodo() {
 }
 
 
-/* RESULTADOS */
+/* =========================
+   RESULTADOS
+========================= */
 
 async function carregarResultados() {
   const colaboradorId =
@@ -1009,8 +1001,10 @@ async function carregarResultados() {
       true,
       "#resultsMsg"
     );
+
     return;
   }
+
 
   if (periodo === "month") {
     const valorMes =
@@ -1022,6 +1016,7 @@ async function carregarResultados() {
         true,
         "#resultsMsg"
       );
+
       return;
     }
 
@@ -1030,8 +1025,11 @@ async function carregarResultados() {
         .split("-")
         .map(Number);
 
-    const ano = partes[0];
-    const mes = partes[1];
+    const ano =
+      partes[0];
+
+    const mes =
+      partes[1];
 
     inicio =
       `${ano}-${String(
@@ -1057,6 +1055,7 @@ async function carregarResultados() {
         true,
         "#resultsMsg"
       );
+
       return;
     }
 
@@ -1117,6 +1116,7 @@ async function carregarResultados() {
       true,
       "#resultsMsg"
     );
+
     return;
   }
 
@@ -1159,7 +1159,9 @@ async function carregarResultados() {
     const respostaPerfis =
       await supabaseClient
         .from("perfis_avaliadores")
-        .select("id, nome")
+        .select(
+          "id, nome"
+        )
         .in(
           "id",
           idsAvaliadores
@@ -1233,4 +1235,152 @@ async function carregarResultados() {
             
               ${apresentarNota(
                 medias[
-                  criterio
+                  criterio.campo
+                ]
+              )}
+            
+
+          
+        `
+      )
+      .join("");
+
+
+  const linhas =
+    registos
+      .map(
+        (registo) => {
+          const mediaRegisto =
+            calcularMedia(
+              criterios.map(
+                (criterio) =>
+                  registo[
+                    criterio.campo
+                  ]
+              )
+            );
+
+          const avaliador =
+            nomesAvaliadores[
+              registo.avaliador_id
+            ] || "Avaliador";
+
+          return `
+            
+
+              
+                ${formatarData(
+                  registo.data_avaliacao
+                )}
+              
+
+              
+                ${avaliador}
+              
+
+              
+                ${registo.sessao_semana}
+              
+
+              
+                ${apresentarNota(
+                  mediaRegisto
+                )}
+              
+
+            
+          `;
+        }
+      )
+      .join("");
+
+
+  let titulo =
+    "Avaliações individuais";
+
+
+  if (periodo === "week") {
+    titulo =
+      "Resultado semanal";
+  }
+
+
+  if (periodo === "month") {
+    titulo =
+      "Resultado mensal";
+  }
+
+
+  $("#resultsOutput").innerHTML = `
+    
+      ${titulo}
+    
+
+    
+      ${registos.length}
+      avaliação(ões), realizadas por
+      ${numeroAvaliadores}
+      de 4 avaliadores.
+    
+
+    
+
+      ${cartoes}
+
+      
+
+        Resultado geral
+
+        
+          ${apresentarNota(
+            medias.geral
+          )}
+        
+
+      
+
+    
+
+    
+
+      
+
+        
+
+          
+            Data
+            Avaliador
+            Sessão
+            Média
+          
+
+        
+
+        
+          ${linhas}
+        
+
+      
+
+    
+  `;
+
+
+  mostrarMensagem(
+    "",
+    false,
+    "#resultsMsg"
+  );
+}
+
+
+/* =========================
+   EVENTOS
+========================= */
+
+function configurarEventos() {
+  const signin = $("#signin");
+  const logout = $("#logout");
+  const save = $("#save");
+  const prev = $("#prev");
+  const next = $("#next");
