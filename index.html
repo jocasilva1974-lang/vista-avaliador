@@ -1,7 +1,9 @@
 <!doctype html>
 <html lang="pt-PT">
+
 <head>
   <meta charset="utf-8">
+
   <meta
     name="viewport"
     content="width=device-width,initial-scale=1"
@@ -9,23 +11,40 @@
 
   <title>Vista do Avaliador</title>
 
-  <link rel="stylesheet" href="style.css">
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
 </head>
 
 <body>
+
   <main class="wrap">
 
     <header class="head">
-      <h1>Vista do Avaliador</h1>
+
+      <h1>
+        Vista do Avaliador
+      </h1>
 
       <p class="muted">
         3 avaliações semanais, por 4 avaliadores,
         com resultados individuais, semanais e mensais.
       </p>
+
     </header>
 
-    <section id="login" class="card">
-      <h2>Entrar</h2>
+
+    <!-- LOGIN -->
+
+    <section
+      id="login"
+      class="card"
+    >
+
+      <h2>
+        Entrar
+      </h2>
 
       <input
         id="email"
@@ -42,28 +61,48 @@
       >
 
       <p>
-        <button id="signin" class="primary">
+        <button
+          id="signin"
+          class="primary"
+          type="button"
+        >
           Entrar
         </button>
       </p>
 
       <p id="authMsg"></p>
+
     </section>
 
-    <section id="app" class="hidden">
+
+    <!-- APLICAÇÃO -->
+
+    <section
+      id="app"
+      class="hidden"
+    >
 
       <div class="row topbar">
+
         <span id="who"></span>
 
-        <button id="logout">
+        <button
+          id="logout"
+          type="button"
+        >
           Sair
         </button>
+
       </div>
+
+
+      <!-- ABAS -->
 
       <nav
         class="tabs"
         aria-label="Áreas da aplicação"
       >
+
         <button
           id="tabEvaluate"
           class="tab active"
@@ -79,11 +118,16 @@
         >
           📊 Resultados
         </button>
+
       </nav>
+
+
+      <!-- AVALIAÇÃO -->
 
       <section id="evaluateView">
 
         <section class="card">
+
           <div
             id="counter"
             class="muted"
@@ -91,21 +135,27 @@
 
           <h2 id="person"></h2>
 
+
           <div class="form-grid">
 
             <label>
+
               Data da avaliação
 
               <input
                 id="evaluationDate"
                 type="date"
               >
+
             </label>
 
+
             <label>
+
               Avaliação da semana
 
               <select id="weeklySlot">
+
                 <option value="1">
                   1.ª avaliação
                 </option>
@@ -117,46 +167,70 @@
                 <option value="3">
                   3.ª avaliação
                 </option>
+
               </select>
+
             </label>
 
           </div>
+
 
           <div
             id="status"
             class="badge"
           ></div>
+
         </section>
 
+
+        <!-- CRITÉRIOS -->
+
         <div id="criteria"></div>
+
+
+        <!-- RESUMO DA AVALIAÇÃO -->
 
         <section
           id="liveSummary"
           class="card summary hidden"
         ></section>
 
+
+        <!-- NAVEGAÇÃO -->
+
         <nav class="actions">
 
-          <button id="prev">
+          <button
+            id="prev"
+            type="button"
+          >
             Anterior
           </button>
 
           <button
             id="save"
             class="primary"
+            type="button"
           >
             Guardar
           </button>
 
-          <button id="next">
+          <button
+            id="next"
+            type="button"
+          >
             Seguinte
           </button>
 
         </nav>
 
+
         <p id="msg"></p>
 
       </section>
+
+
+      <!-- RESULTADOS -->
 
       <section
         id="resultsView"
@@ -164,20 +238,33 @@
       >
 
         <section class="card">
-          <h2>Resultados</h2>
 
-          <div class="form-grid results-filters">
+          <h2>
+            Resultados
+          </h2>
+
+
+          <div
+            class="form-grid results-filters"
+          >
 
             <label>
-              Colaborador
 
-              <select id="resultPerson"></select>
+              Atleta
+
+              <select
+                id="resultPerson"
+              ></select>
+
             </label>
 
+
             <label>
+
               Período
 
               <select id="resultPeriod">
+
                 <option value="individual">
                   Avaliações individuais
                 </option>
@@ -189,31 +276,40 @@
                 <option value="month">
                   Mês
                 </option>
+
               </select>
+
             </label>
 
+
             <label id="weekField">
+
               Semana
 
               <input
                 id="resultWeek"
                 type="week"
               >
+
             </label>
+
 
             <label
               id="monthField"
               class="hidden"
             >
+
               Mês
 
               <input
                 id="resultMonth"
                 type="month"
               >
+
             </label>
 
           </div>
+
 
           <button
             id="loadResults"
@@ -223,20 +319,28 @@
             Calcular resultados
           </button>
 
+
           <p class="muted small">
             O resultado conjunto agrega as avaliações
             guardadas pelos 4 avaliadores com peso igual.
           </p>
+
         </section>
+
+
+        <!-- SAÍDA DOS RESULTADOS -->
 
         <section
           id="resultsOutput"
           class="card"
         >
+
           <p class="muted">
-            Escolhe o colaborador e o período.
+            Escolhe o atleta e o período.
           </p>
+
         </section>
+
 
         <p id="resultsMsg"></p>
 
@@ -246,8 +350,21 @@
 
   </main>
 
+
+  <!-- SUPABASE -->
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">\</script>
+
+
+  <!-- CONFIGURAÇÃO -->
+
   <script src="config.js"></script>
+
+
+  <!-- APLICAÇÃO -->
+
   <script src="app.js"></script>
+
 </body>
+
 </html>
