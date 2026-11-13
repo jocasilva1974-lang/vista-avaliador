@@ -32,7 +32,7 @@ const criterios = [
 
 let supabaseClient = null;
 let utilizador = null;
-let Atleta = [];
+let colaboradores = [];
 Não foi possível carregar os colaboradores: Could not find the table 'public.colaboradores' in the schema cache indiceAtual = 0;
 let classificacoes = {};
 
