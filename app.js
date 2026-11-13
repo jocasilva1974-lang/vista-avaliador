@@ -1,48 +1,39 @@
 const config = window.APP_CONFIG || {};
 
-const $ = (selector) =>
-  document.querySelector(selector);
+const $ = (selector) => document.querySelector(selector);
 
 const criterios = [
   {
     campo: "entrega",
     titulo: "📦 Entrega",
-    descricao:
-      "Resultados e cumprimento dos objetivos definidos"
+    descricao: "Resultados e cumprimento dos objetivos definidos"
   },
   {
     campo: "execucao",
     titulo: "▶️ Execução",
-    descricao:
-      "Cumprimento das etapas e procedimentos observáveis"
+    descricao: "Cumprimento das etapas e procedimentos observáveis"
   },
   {
     campo: "qualidade",
     titulo: "✅ Qualidade",
-    descricao:
-      "Precisão, conformidade e correções verificáveis"
+    descricao: "Precisão, conformidade e correções verificáveis"
   },
   {
     campo: "respeito",
     titulo: "🤝 Respeito",
-    descricao:
-      "Comportamentos profissionais observáveis e colaboração"
+    descricao: "Comportamentos profissionais observáveis e colaboração"
   }
 ];
 
 let supabaseClient = null;
 let utilizador = null;
 let colaboradores = [];
-Não foi possível carregar os colaboradores: Could not find the table 'public.colaboradores' in the schema cache indiceAtual = 0;
+let indiceAtual = 0;
 let classificacoes = {};
 
 /* MENSAGENS */
 
-function mostrarMensagem(
-  texto,
-  erro = false,
-  destino = "#msg"
-) {
+function mostrarMensagem(texto, erro = false, destino = "#msg") {
   const elemento = $(destino);
 
   if (!elemento) {
@@ -50,24 +41,17 @@ function mostrarMensagem(
   }
 
   elemento.textContent = texto;
-  elemento.className =
-    erro ? "error" : "ok";
+  elemento.className = erro ? "error" : "ok";
 }
 
 /* CONFIGURAÇÃO DO SUPABASE */
 
 function configuracaoValida() {
   return (
-    typeof config.SUPABASE_URL ===
-      "string" &&
-    config.SUPABASE_URL.startsWith(
-      "https://"
-    ) &&
-    typeof config.SUPABASE_PUBLISHABLE_KEY ===
-      "string" &&
-    config.SUPABASE_PUBLISHABLE_KEY.startsWith(
-      "sb_publishable_"
-    )
+    typeof config.SUPABASE_URL === "string" &&
+    config.SUPABASE_URL.startsWith("https://") &&
+    typeof config.SUPABASE_PUBLISHABLE_KEY === "string" &&
+    config.SUPABASE_PUBLISHABLE_KEY.startsWith("sb_publishable_")
   );
 }
 
@@ -84,8 +68,7 @@ function iniciarSupabase() {
 
   if (
     typeof supabase === "undefined" ||
-    typeof supabase.createClient !==
-      "function"
+    typeof supabase.createClient !== "function"
   ) {
     mostrarMensagem(
       "Não foi possível carregar a biblioteca do Supabase.",
@@ -96,32 +79,26 @@ function iniciarSupabase() {
     return false;
   }
 
-  supabaseClient =
-    supabase.createClient(
-      config.SUPABASE_URL,
-      config.SUPABASE_PUBLISHABLE_KEY
-    );
+  supabaseClient = supabase.createClient(
+    config.SUPABASE_URL,
+    config.SUPABASE_PUBLISHABLE_KEY
+  );
 
   return true;
 }
 
 /* DATAS E MÉDIAS */
 
-function dataLocalISO(
-  data = new Date()
-) {
-  const ano =
-    data.getFullYear();
+function dataLocalISO(data = new Date()) {
+  const ano = data.getFullYear();
 
-  const mes =
-    String(
-      data.getMonth() + 1
-    ).padStart(2, "0");
+  const mes = String(
+    data.getMonth() + 1
+  ).padStart(2, "0");
 
-  const dia =
-    String(
-      data.getDate()
-    ).padStart(2, "0");
+  const dia = String(
+    data.getDate()
+  ).padStart(2, "0");
 
   return `${ano}-${mes}-${dia}`;
 }
@@ -134,36 +111,25 @@ function formatarData(valor) {
   return new Intl.DateTimeFormat(
     "pt-PT"
   ).format(
-    new Date(
-      valor + "T12:00:00"
-    )
+    new Date(valor + "T12:00:00")
   );
 }
 
 function calcularMedia(valores) {
-  const numeros =
-    valores
-      .map(Number)
-      .filter(
-        (valor) =>
-          Number.isFinite(valor)
-      );
+  const numeros = valores
+    .map(Number)
+    .filter((valor) => Number.isFinite(valor));
 
-  if (
-    numeros.length === 0
-  ) {
+  if (numeros.length === 0) {
     return null;
   }
 
-  const total =
-    numeros.reduce(
-      (soma, valor) =>
-        soma + valor,
-      0
-    );
+  const total = numeros.reduce(
+    (soma, valor) => soma + valor,
+    0
+  );
 
-  return total /
-    numeros.length;
+  return total / numeros.length;
 }
 
 function apresentarNota(valor) {
@@ -181,61 +147,49 @@ function apresentarNota(valor) {
 
 /* SEMANA */
 
-function semanaAtualISO(
-  data = new Date()
-) {
-  const copia =
-    new Date(
-      Date.UTC(
-        data.getFullYear(),
-        data.getMonth(),
-        data.getDate()
-      )
-    );
+function semanaAtualISO(data = new Date()) {
+  const copia = new Date(
+    Date.UTC(
+      data.getFullYear(),
+      data.getMonth(),
+      data.getDate()
+    )
+  );
 
   const diaSemana =
     copia.getUTCDay() || 7;
 
   copia.setUTCDate(
     copia.getUTCDate() +
-      4 -
-      diaSemana
+    4 -
+    diaSemana
   );
 
-  const primeiroDia =
-    new Date(
-      Date.UTC(
-        copia.getUTCFullYear(),
-        0,
-        1
-      )
-    );
+  const primeiroDia = new Date(
+    Date.UTC(
+      copia.getUTCFullYear(),
+      0,
+      1
+    )
+  );
 
-  const numeroSemana =
-    Math.ceil(
+  const numeroSemana = Math.ceil(
+    (
       (
-        (
-          copia -
-          primeiroDia
-        ) /
-          86400000 +
-        1
-      ) /
-        7
-    );
+        copia - primeiroDia
+      ) / 86400000 +
+      1
+    ) / 7
+  );
 
   return (
     copia.getUTCFullYear() +
     "-W" +
-    String(
-      numeroSemana
-    ).padStart(2, "0")
+    String(numeroSemana).padStart(2, "0")
   );
 }
 
-function datasDaSemana(
-  valorSemana
-) {
+function datasDaSemana(valorSemana) {
   const partes =
     valorSemana.split("-W");
 
@@ -255,21 +209,19 @@ function datasDaSemana(
     );
 
   const segunda =
-    new Date(
-      quatroJaneiro
-    );
+    new Date(quatroJaneiro);
 
   segunda.setUTCDate(
     quatroJaneiro.getUTCDate() -
-      (
-        quatroJaneiro.getUTCDay() ||
-        7
-      ) +
-      1 +
-      (
-        numeroSemana - 1
-      ) *
-        7
+    (
+      quatroJaneiro.getUTCDay() ||
+      7
+    ) +
+    1 +
+    (
+      numeroSemana - 1
+    ) *
+    7
   );
 
   const domingo =
@@ -330,8 +282,8 @@ async function verificarSessao() {
   }
 
   utilizador =
-    resposta.data.session
-      ?.user || null;
+    resposta.data.session?.user ||
+    null;
 
   atualizarVisibilidade();
 
@@ -342,17 +294,12 @@ async function verificarSessao() {
 
 async function entrar() {
   const email =
-    $("#email")
-      .value
-      .trim();
+    $("#email").value.trim();
 
   const password =
     $("#password").value;
 
-  if (
-    !email ||
-    !password
-  ) {
+  if (!email || !password) {
     mostrarMensagem(
       "Introduz o e-mail e a password.",
       true,
@@ -362,9 +309,7 @@ async function entrar() {
     return;
   }
 
-  $("#signin").disabled =
-    true;
-
+  $("#signin").disabled = true;
   $("#signin").textContent =
     "A entrar...";
 
@@ -375,9 +320,7 @@ async function entrar() {
         password
       });
 
-  $("#signin").disabled =
-    false;
-
+  $("#signin").disabled = false;
   $("#signin").textContent =
     "Entrar";
 
@@ -436,16 +379,16 @@ async function sair() {
   );
 }
 
-/* COLABORADORES */
+/* ATLETAS */
 
 async function carregarColaboradores() {
   mostrarMensagem(
-    "A carregar colaboradores..."
+    "A carregar atletas..."
   );
 
   const resposta =
     await supabaseClient
-      .from("colaboradores")
+      .from("atletas")
       .select(
         "id, numero, nome"
       )
@@ -462,8 +405,8 @@ async function carregarColaboradores() {
 
   if (resposta.error) {
     mostrarMensagem(
-      "Não foi possível carregar os colaboradores: " +
-        resposta.error.message,
+      "Não foi possível carregar os atletas: " +
+      resposta.error.message,
       true
     );
 
@@ -477,7 +420,7 @@ async function carregarColaboradores() {
     colaboradores.length === 0
   ) {
     mostrarMensagem(
-      "Não existem colaboradores ativos.",
+      "Não existem atletas ativos.",
       true
     );
 
@@ -498,9 +441,9 @@ function preencherListaResultados() {
     colaboradores
       .map(
         (colaborador) => `
-          <option value="${colaborador.id}">
+          
             ${colaborador.numero} - ${colaborador.nome}
-          </option>
+          
         `
       )
       .join("");
@@ -547,7 +490,7 @@ async function carregarAvaliacaoAtual() {
   if (resposta.error) {
     mostrarMensagem(
       "Não foi possível carregar a avaliação: " +
-        resposta.error.message,
+      resposta.error.message,
       true
     );
 
@@ -559,9 +502,7 @@ async function carregarAvaliacaoAtual() {
 
 /* BOTÕES DE CLASSIFICAÇÃO */
 
-function criarBotoesClassificacao(
-  campo
-) {
+function criarBotoesClassificacao(campo) {
   return Array.from(
     {
       length: 11
@@ -574,15 +515,9 @@ function criarBotoesClassificacao(
           : "";
 
       return `
-        <button
-          type="button"
-          class="score ${selecionado}"
-          data-campo="${campo}"
-          data-nota="${numero}"
-          aria-label="${campo}: ${numero}"
-        >
+        
           ${numero}
-        </button>
+        
       `;
     }
   ).join("");
@@ -592,21 +527,21 @@ function criarCriteriosHTML() {
   return criterios
     .map(
       (criterio) => `
-        <section class="card">
-          <h3>
+        
+          
             ${criterio.titulo}
-          </h3>
+          
 
-          <p class="muted">
+          
             ${criterio.descricao}
-          </p>
+          
 
-          <div class="scores">
+          
             ${criarBotoesClassificacao(
               criterio.campo
             )}
-          </div>
-        </section>
+          
+        
       `
     )
     .join("");
@@ -625,34 +560,29 @@ function avaliacaoCompleta() {
 
 function ligarBotoesNotas() {
   document
-    .querySelectorAll(
-      ".score"
-    )
-    .forEach(
-      (botao) => {
-        botao.addEventListener(
-          "click",
-          () => {
-            const campo =
-              botao.dataset.campo;
+    .querySelectorAll(".score")
+    .forEach((botao) => {
+      botao.addEventListener(
+        "click",
+        () => {
+          const campo =
+            botao.dataset.campo;
 
-            const nota =
-              Number(
-                botao.dataset.nota
-              );
+          const nota =
+            Number(
+              botao.dataset.nota
+            );
 
-            classificacoes[
-              campo
-            ] = nota;
+          classificacoes[campo] =
+            nota;
 
-            $("#status").textContent =
-              "Alterações por guardar";
+          $("#status").textContent =
+            "Alterações por guardar";
 
-            atualizarCriterios();
-          }
-        );
-      }
-    );
+          atualizarCriterios();
+        }
+      );
+    });
 }
 
 function atualizarCriterios() {
@@ -673,9 +603,7 @@ function atualizarResumo() {
   const caixa =
     $("#liveSummary");
 
-  if (
-    !avaliacaoCompleta()
-  ) {
+  if (!avaliacaoCompleta()) {
     caixa.innerHTML = "";
 
     caixa.classList.add(
@@ -699,39 +627,39 @@ function atualizarResumo() {
     criterios
       .map(
         (criterio) => `
-          <div class="metric">
+          
             ${criterio.titulo}
 
-            <strong>
+            
               ${apresentarNota(
                 classificacoes[
                   criterio.campo
                 ]
               )}
-            </strong>
-          </div>
+            
+          
         `
       )
       .join("");
 
   caixa.innerHTML = `
-    <h3>
+    
       Resumo desta avaliação
-    </h3>
+    
 
-    <div class="result-grid">
+    
       ${indicadores}
 
-      <div class="metric">
+      
         Média
 
-        <strong>
+        
           ${apresentarNota(
             resultadoGeral
           )}
-        </strong>
-      </div>
-    </div>
+        
+      
+    
   `;
 
   caixa.classList.remove(
@@ -739,7 +667,7 @@ function atualizarResumo() {
   );
 }
 
-/* MOSTRAR COLABORADOR */
+/* MOSTRAR ATLETA */
 
 async function apresentarColaborador() {
   if (
@@ -752,7 +680,7 @@ async function apresentarColaborador() {
     colaboradores[indiceAtual];
 
   $("#counter").textContent =
-    `Colaborador ${
+    `Atleta ${
       indiceAtual + 1
     } de ${
       colaboradores.length
@@ -809,9 +737,7 @@ async function apresentarColaborador() {
 /* GUARDAR */
 
 async function guardarAvaliacao() {
-  if (
-    !avaliacaoCompleta()
-  ) {
+  if (!avaliacaoCompleta()) {
     mostrarMensagem(
       "Preenche os quatro critérios antes de guardar.",
       true
@@ -883,7 +809,7 @@ async function guardarAvaliacao() {
   if (resposta.error) {
     mostrarMensagem(
       "Não foi possível guardar: " +
-        resposta.error.message,
+      resposta.error.message,
       true
     );
 
@@ -900,9 +826,7 @@ async function guardarAvaliacao() {
 
 /* NAVEGAÇÃO */
 
-async function navegar(
-  direcao
-) {
+async function navegar(direcao) {
   const novoIndice =
     indiceAtual + direcao;
 
@@ -927,9 +851,7 @@ async function navegar(
 
 /* ALTERAR VISTA */
 
-function trocarVista(
-  resultados
-) {
+function trocarVista(resultados) {
   $("#evaluateView").classList.toggle(
     "hidden",
     resultados
@@ -978,9 +900,7 @@ async function carregarResultados() {
   let inicio = "";
   let fim = "";
 
-  if (
-    periodo === "month"
-  ) {
+  if (periodo === "month") {
     const valorMes =
       $("#resultMonth").value;
 
@@ -1082,7 +1002,7 @@ async function carregarResultados() {
   if (resposta.error) {
     mostrarMensagem(
       "Não foi possível carregar os resultados: " +
-        resposta.error.message,
+      resposta.error.message,
       true,
       "#resultsMsg"
     );
@@ -1097,9 +1017,9 @@ async function carregarResultados() {
     registos.length === 0
   ) {
     $("#resultsOutput").innerHTML = `
-      <p class="muted">
+      
         Não existem avaliações nesse período.
-      </p>
+      
     `;
 
     mostrarMensagem(
@@ -1147,318 +1067,4 @@ async function carregarResultados() {
             respostaPerfis.data ||
             []
           ).map(
-            (perfil) => [
-              perfil.id,
-              perfil.nome
-            ]
-          )
-        );
-    }
-  }
-
-  const medias = {};
-
-  criterios.forEach(
-    (criterio) => {
-      medias[
-        criterio.campo
-      ] =
-        calcularMedia(
-          registos.map(
-            (registo) =>
-              registo[
-                criterio.campo
-              ]
-          )
-        );
-    }
-  );
-
-  medias.geral =
-    calcularMedia(
-      criterios.map(
-        (criterio) =>
-          medias[
-            criterio.campo
-          ]
-      )
-    );
-
-  const numeroAvaliadores =
-    new Set(
-      registos.map(
-        (registo) =>
-          registo.avaliador_id
-      )
-    ).size;
-
-  const cartoes =
-    criterios
-      .map(
-        (criterio) => `
-          <div class="metric">
-            ${criterio.titulo}
-
-            <strong>
-              ${apresentarNota(
-                medias[
-                  criterio.campo
-                ]
-              )}
-            </strong>
-          </div>
-        `
-      )
-      .join("");
-
-  const linhas =
-    registos
-      .map(
-        (registo) => {
-          const mediaRegisto =
-            calcularMedia(
-              criterios.map(
-                (criterio) =>
-                  registo[
-                    criterio.campo
-                  ]
-              )
-            );
-
-          const avaliador =
-            nomesAvaliadores[
-              registo.avaliador_id
-            ] || "Avaliador";
-
-          return `
-            <tr>
-              <td>
-                ${formatarData(
-                  registo.data_avaliacao
-                )}
-              </td>
-
-              <td>
-                ${avaliador}
-              </td>
-
-              <td>
-                ${registo.sessao_semana}
-              </td>
-
-              <td>
-                ${apresentarNota(
-                  mediaRegisto
-                )}
-              </td>
-            </tr>
-          `;
-        }
-      )
-      .join("");
-
-  let titulo =
-    "Avaliações individuais";
-
-  if (
-    periodo === "week"
-  ) {
-    titulo =
-      "Resultado semanal";
-  }
-
-  if (
-    periodo === "month"
-  ) {
-    titulo =
-      "Resultado mensal";
-  }
-
-  $("#resultsOutput").innerHTML = `
-    <h3>
-      ${titulo}
-    </h3>
-
-    <p class="muted">
-      ${registos.length}
-      avaliação(ões), realizadas por
-      ${numeroAvaliadores}
-      de 4 avaliadores.
-    </p>
-
-    <div class="result-grid">
-      ${cartoes}
-
-      <div class="metric">
-        Resultado geral
-
-        <strong>
-          ${apresentarNota(
-            medias.geral
-          )}
-        </strong>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <table class="result-list">
-        <thead>
-          <tr>
-            <th>Data</th>
-            <th>Avaliador</th>
-            <th>Sessão</th>
-            <th>Média</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          ${linhas}
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  mostrarMensagem(
-    "",
-    false,
-    "#resultsMsg"
-  );
-}
-
-/* EVENTOS */
-
-function configurarEventos() {
-  $("#signin").addEventListener(
-    "click",
-    entrar
-  );
-
-  $("#logout").addEventListener(
-    "click",
-    sair
-  );
-
-  $("#save").addEventListener(
-    "click",
-    guardarAvaliacao
-  );
-
-  $("#prev").addEventListener(
-    "click",
-    () => navegar(-1)
-  );
-
-  $("#next").addEventListener(
-    "click",
-    () => navegar(1)
-  );
-
-  $("#password").addEventListener(
-    "keydown",
-    (evento) => {
-      if (
-        evento.key === "Enter"
-      ) {
-        entrar();
-      }
-    }
-  );
-
-  $("#evaluationDate")
-    .addEventListener(
-      "change",
-      apresentarColaborador
-    );
-
-  $("#weeklySlot")
-    .addEventListener(
-      "change",
-      apresentarColaborador
-    );
-
-  $("#tabEvaluate")
-    .addEventListener(
-      "click",
-      () =>
-        trocarVista(false)
-    );
-
-  $("#tabResults")
-    .addEventListener(
-      "click",
-      () =>
-        trocarVista(true)
-    );
-
-  $("#resultPeriod")
-    .addEventListener(
-      "change",
-      atualizarFiltroPeriodo
-    );
-
-  $("#loadResults")
-    .addEventListener(
-      "click",
-      carregarResultados
-    );
-}
-
-/* INÍCIO */
-
-async function iniciarAplicacao() {
-  if (
-    !iniciarSupabase()
-  ) {
-    return;
-  }
-
-  $("#evaluationDate").value =
-    dataLocalISO();
-
-  $("#resultWeek").value =
-    semanaAtualISO();
-
-  $("#resultMonth").value =
-    dataLocalISO().slice(
-      0,
-      7
-    );
-
-  configurarEventos();
-
-  atualizarFiltroPeriodo();
-
-  await verificarSessao();
-
-  supabaseClient.auth
-    .onAuthStateChange(
-      async (
-        _evento,
-        sessao
-      ) => {
-        const novoUtilizador =
-          sessao?.user || null;
-
-        if (
-          novoUtilizador?.id ===
-          utilizador?.id
-        ) {
-          return;
-        }
-
-        utilizador =
-          novoUtilizador;
-
-        atualizarVisibilidade();
-
-        if (utilizador) {
-          await carregarColaboradores();
-        }
-      }
-    );
-}
-
-document.addEventListener(
-  "DOMContentLoaded",
-  iniciarAplicacao
-);
+            (perfil
