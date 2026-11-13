@@ -23,9 +23,7 @@
 
     <header class="head">
 
-      <h1>
-        Vista do Avaliador
-      </h1>
+      <h1>Vista do Avaliador</h1>
 
       <p class="muted">
         3 avaliações semanais, por 4 avaliadores,
@@ -42,9 +40,7 @@
       class="card"
     >
 
-      <h2>
-        Entrar
-      </h2>
+      <h2>Entrar</h2>
 
       <input
         id="email"
@@ -71,6 +67,58 @@
       </p>
 
       <p id="authMsg"></p>
+
+    </section>
+
+
+    <!-- NOVA PASSWORD -->
+
+    <section
+      id="passwordRecovery"
+      class="card hidden"
+    >
+
+      <h2>Definir nova password</h2>
+
+      <p class="muted">
+        Introduz a nova password que pretendes utilizar.
+      </p>
+
+      <label>
+        Nova password
+
+        <input
+          id="newPassword"
+          type="password"
+          autocomplete="new-password"
+          placeholder="Nova password"
+        >
+      </label>
+
+      <br>
+
+      <label>
+        Confirmar nova password
+
+        <input
+          id="confirmPassword"
+          type="password"
+          autocomplete="new-password"
+          placeholder="Confirmar nova password"
+        >
+      </label>
+
+      <p>
+        <button
+          id="savePassword"
+          class="primary"
+          type="button"
+        >
+          Guardar nova password
+        </button>
+      </p>
+
+      <p id="passwordMsg"></p>
 
     </section>
 
@@ -188,7 +236,7 @@
         <div id="criteria"></div>
 
 
-        <!-- RESUMO DA AVALIAÇÃO -->
+        <!-- RESUMO -->
 
         <section
           id="liveSummary"
@@ -224,7 +272,6 @@
 
         </nav>
 
-
         <p id="msg"></p>
 
       </section>
@@ -239,10 +286,7 @@
 
         <section class="card">
 
-          <h2>
-            Resultados
-          </h2>
-
+          <h2>Resultados</h2>
 
           <div
             class="form-grid results-filters"
@@ -328,8 +372,6 @@
         </section>
 
 
-        <!-- SAÍDA DOS RESULTADOS -->
-
         <section
           id="resultsOutput"
           class="card"
@@ -340,7 +382,6 @@
           </p>
 
         </section>
-
 
         <p id="resultsMsg"></p>
 
