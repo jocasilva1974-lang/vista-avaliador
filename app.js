@@ -1,5 +1,4 @@
 const config = window.APP_CONFIG || {};
-
 const $ = (selector) => document.querySelector(selector);
 
 const criterios = [
@@ -91,14 +90,8 @@ function iniciarSupabase() {
 
 function dataLocalISO(data = new Date()) {
   const ano = data.getFullYear();
-
-  const mes = String(
-    data.getMonth() + 1
-  ).padStart(2, "0");
-
-  const dia = String(
-    data.getDate()
-  ).padStart(2, "0");
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  const dia = String(data.getDate()).padStart(2, "0");
 
   return `${ano}-${mes}-${dia}`;
 }
@@ -108,9 +101,7 @@ function formatarData(valor) {
     return "";
   }
 
-  return new Intl.DateTimeFormat(
-    "pt-PT"
-  ).format(
+  return new Intl.DateTimeFormat("pt-PT").format(
     new Date(valor + "T12:00:00")
   );
 }
@@ -156,13 +147,10 @@ function semanaAtualISO(data = new Date()) {
     )
   );
 
-  const diaSemana =
-    copia.getUTCDay() || 7;
+  const diaSemana = copia.getUTCDay() || 7;
 
   copia.setUTCDate(
-    copia.getUTCDate() +
-    4 -
-    diaSemana
+    copia.getUTCDate() + 4 - diaSemana
   );
 
   const primeiroDia = new Date(
@@ -190,26 +178,19 @@ function semanaAtualISO(data = new Date()) {
 }
 
 function datasDaSemana(valorSemana) {
-  const partes =
-    valorSemana.split("-W");
+  const partes = valorSemana.split("-W");
+  const ano = Number(partes[0]);
+  const numeroSemana = Number(partes[1]);
 
-  const ano =
-    Number(partes[0]);
+  const quatroJaneiro = new Date(
+    Date.UTC(
+      ano,
+      0,
+      4
+    )
+  );
 
-  const numeroSemana =
-    Number(partes[1]);
-
-  const quatroJaneiro =
-    new Date(
-      Date.UTC(
-        ano,
-        0,
-        4
-      )
-    );
-
-  const segunda =
-    new Date(quatroJaneiro);
+  const segunda = new Date(quatroJaneiro);
 
   segunda.setUTCDate(
     quatroJaneiro.getUTCDate() -
@@ -224,31 +205,27 @@ function datasDaSemana(valorSemana) {
     7
   );
 
-  const domingo =
-    new Date(segunda);
+  const domingo = new Date(segunda);
 
   domingo.setUTCDate(
     segunda.getUTCDate() + 6
   );
 
   return {
-    inicio:
-      segunda
-        .toISOString()
-        .slice(0, 10),
+    inicio: segunda
+      .toISOString()
+      .slice(0, 10),
 
-    fim:
-      domingo
-        .toISOString()
-        .slice(0, 10)
+    fim: domingo
+      .toISOString()
+      .slice(0, 10)
   };
 }
 
 /* AUTENTICAÇÃO */
 
 function atualizarVisibilidade() {
-  const autenticado =
-    Boolean(utilizador);
+  const autenticado = Boolean(utilizador);
 
   $("#login").classList.toggle(
     "hidden",
@@ -268,8 +245,7 @@ function atualizarVisibilidade() {
 
 async function verificarSessao() {
   const resposta =
-    await supabaseClient.auth
-      .getSession();
+    await supabaseClient.auth.getSession();
 
   if (resposta.error) {
     mostrarMensagem(
@@ -282,13 +258,12 @@ async function verificarSessao() {
   }
 
   utilizador =
-    resposta.data.session?.user ||
-    null;
+    resposta.data.session?.user || null;
 
   atualizarVisibilidade();
 
   if (utilizador) {
-    await carregarColaboradores();
+    await carregarAtletas();
   }
 }
 
@@ -310,48 +285,56 @@ async function entrar() {
   }
 
   $("#signin").disabled = true;
-  $("#signin").textContent =
-    "A entrar...";
+  $("#signin").textContent = "A entrar...";
 
-  const resposta =
-    await supabaseClient.auth
-      .signInWithPassword({
-        email,
-        password
-      });
+  try {
+    const resposta =
+      await supabaseClient.auth
+        .signInWithPassword({
+          email,
+          password
+        });
 
-  $("#signin").disabled = false;
-  $("#signin").textContent =
-    "Entrar";
+    if (resposta.error) {
+      mostrarMensagem(
+        resposta.error.message,
+        true,
+        "#authMsg"
+      );
 
-  if (resposta.error) {
+      return;
+    }
+
+    utilizador = resposta.data.user;
+
     mostrarMensagem(
-      resposta.error.message,
-      true,
+      "",
+      false,
       "#authMsg"
     );
 
-    return;
+    atualizarVisibilidade();
+
+    await carregarAtletas();
+  } catch (erro) {
+    mostrarMensagem(
+      "Não foi possível entrar: " +
+      (
+        erro?.message ||
+        "erro desconhecido"
+      ),
+      true,
+      "#authMsg"
+    );
+  } finally {
+    $("#signin").disabled = false;
+    $("#signin").textContent = "Entrar";
   }
-
-  utilizador =
-    resposta.data.user;
-
-  mostrarMensagem(
-    "",
-    false,
-    "#authMsg"
-  );
-
-  atualizarVisibilidade();
-
-  await carregarColaboradores();
 }
 
 async function sair() {
   const resposta =
-    await supabaseClient.auth
-      .signOut();
+    await supabaseClient.auth.signOut();
 
   if (resposta.error) {
     mostrarMensagem(
@@ -381,7 +364,7 @@ async function sair() {
 
 /* ATLETAS */
 
-async function carregarColaboradores() {
+async function carregarAtletas() {
   mostrarMensagem(
     "A carregar atletas..."
   );
@@ -389,13 +372,8 @@ async function carregarColaboradores() {
   const resposta =
     await supabaseClient
       .from("atletas")
-      .select(
-        "id, numero, nome"
-      )
-      .eq(
-        "ativo",
-        true
-      )
+      .select("id, numero, nome")
+      .eq("ativo", true)
       .order(
         "numero",
         {
@@ -413,12 +391,9 @@ async function carregarColaboradores() {
     return;
   }
 
-  colaboradores =
-    resposta.data || [];
+  colaboradores = resposta.data || [];
 
-  if (
-    colaboradores.length === 0
-  ) {
+  if (colaboradores.length === 0) {
     mostrarMensagem(
       "Não existem atletas ativos.",
       true
@@ -433,7 +408,7 @@ async function carregarColaboradores() {
 
   mostrarMensagem("");
 
-  await apresentarColaborador();
+  await apresentarAtleta();
 }
 
 function preencherListaResultados() {
@@ -441,9 +416,9 @@ function preencherListaResultados() {
     colaboradores
       .map(
         (colaborador) => `
-          
+          <option value="${colaborador.id}">
             ${colaborador.numero} - ${colaborador.nome}
-          
+          </option>
         `
       )
       .join("");
@@ -509,15 +484,20 @@ function criarBotoesClassificacao(campo) {
     },
     (_, numero) => {
       const selecionado =
-        classificacoes[campo] ===
-        numero
+        classificacoes[campo] === numero
           ? "sel"
           : "";
 
       return `
-        
+        <button
+          type="button"
+          class="score ${selecionado}"
+          data-campo="${campo}"
+          data-nota="${numero}"
+          aria-label="${campo}: ${numero}"
+        >
           ${numero}
-        
+        </button>
       `;
     }
   ).join("");
@@ -527,21 +507,21 @@ function criarCriteriosHTML() {
   return criterios
     .map(
       (criterio) => `
-        
-          
+        <section class="card">
+          <h3>
             ${criterio.titulo}
-          
+          </h3>
 
-          
+          <p class="muted">
             ${criterio.descricao}
-          
+          </p>
 
-          
+          <div class="scores">
             ${criarBotoesClassificacao(
               criterio.campo
             )}
-          
-        
+          </div>
+        </section>
       `
     )
     .join("");
@@ -573,8 +553,7 @@ function ligarBotoesNotas() {
               botao.dataset.nota
             );
 
-          classificacoes[campo] =
-            nota;
+          classificacoes[campo] = nota;
 
           $("#status").textContent =
             "Alterações por guardar";
@@ -605,10 +584,7 @@ function atualizarResumo() {
 
   if (!avaliacaoCompleta()) {
     caixa.innerHTML = "";
-
-    caixa.classList.add(
-      "hidden"
-    );
+    caixa.classList.add("hidden");
 
     return;
   }
@@ -627,52 +603,48 @@ function atualizarResumo() {
     criterios
       .map(
         (criterio) => `
-          
+          <div class="metric">
             ${criterio.titulo}
 
-            
+            <strong>
               ${apresentarNota(
                 classificacoes[
                   criterio.campo
                 ]
               )}
-            
-          
+            </strong>
+          </div>
         `
       )
       .join("");
 
   caixa.innerHTML = `
-    
+    <h3>
       Resumo desta avaliação
-    
+    </h3>
 
-    
+    <div class="result-grid">
       ${indicadores}
 
-      
+      <div class="metric">
         Média
 
-        
+        <strong>
           ${apresentarNota(
             resultadoGeral
           )}
-        
-      
-    
+        </strong>
+      </div>
+    </div>
   `;
 
-  caixa.classList.remove(
-    "hidden"
-  );
+  caixa.classList.remove("hidden");
 }
 
 /* MOSTRAR ATLETA */
 
-async function apresentarColaborador() {
-  if (
-    colaboradores.length === 0
-  ) {
+async function apresentarAtleta() {
+  if (colaboradores.length === 0) {
     return;
   }
 
@@ -696,8 +668,7 @@ async function apresentarColaborador() {
     indiceAtual ===
     colaboradores.length - 1;
 
-  $("#save").disabled =
-    true;
+  $("#save").disabled = true;
 
   $("#status").textContent =
     "A carregar...";
@@ -783,9 +754,7 @@ async function guardarAvaliacao() {
       new Date().toISOString()
   };
 
-  $("#save").disabled =
-    true;
-
+  $("#save").disabled = true;
   $("#save").textContent =
     "A guardar...";
 
@@ -800,8 +769,7 @@ async function guardarAvaliacao() {
         }
       );
 
-  $("#save").textContent =
-    "Guardar";
+  $("#save").textContent = "Guardar";
 
   $("#save").disabled =
     !avaliacaoCompleta();
@@ -832,16 +800,14 @@ async function navegar(direcao) {
 
   if (
     novoIndice < 0 ||
-    novoIndice >=
-      colaboradores.length
+    novoIndice >= colaboradores.length
   ) {
     return;
   }
 
-  indiceAtual =
-    novoIndice;
+  indiceAtual = novoIndice;
 
-  await apresentarColaborador();
+  await apresentarAtleta();
 
   window.scrollTo({
     top: 0,
@@ -900,6 +866,16 @@ async function carregarResultados() {
   let inicio = "";
   let fim = "";
 
+  if (!colaboradorId) {
+    mostrarMensagem(
+      "Escolhe o atleta.",
+      true,
+      "#resultsMsg"
+    );
+
+    return;
+  }
+
   if (periodo === "month") {
     const valorMes =
       $("#resultMonth").value;
@@ -919,11 +895,8 @@ async function carregarResultados() {
         .split("-")
         .map(Number);
 
-    const ano =
-      partes[0];
-
-    const mes =
-      partes[1];
+    const ano = partes[0];
+    const mes = partes[1];
 
     inicio =
       `${ano}-${String(
@@ -953,15 +926,10 @@ async function carregarResultados() {
     }
 
     const intervalo =
-      datasDaSemana(
-        valorSemana
-      );
+      datasDaSemana(valorSemana);
 
-    inicio =
-      intervalo.inicio;
-
-    fim =
-      intervalo.fim;
+    inicio = intervalo.inicio;
+    fim = intervalo.fim;
   }
 
   mostrarMensagem(
@@ -1013,13 +981,11 @@ async function carregarResultados() {
   const registos =
     resposta.data || [];
 
-  if (
-    registos.length === 0
-  ) {
+  if (registos.length === 0) {
     $("#resultsOutput").innerHTML = `
-      
+      <p class="muted">
         Não existem avaliações nesse período.
-      
+      </p>
     `;
 
     mostrarMensagem(
@@ -1042,29 +1008,318 @@ async function carregarResultados() {
 
   let nomesAvaliadores = {};
 
-  if (
-    idsAvaliadores.length > 0
-  ) {
+  if (idsAvaliadores.length > 0) {
     const respostaPerfis =
       await supabaseClient
-        .from(
-          "perfis_avaliadores"
-        )
-        .select(
-          "id, nome"
-        )
+        .from("perfis_avaliadores")
+        .select("id, nome")
         .in(
           "id",
           idsAvaliadores
         );
 
-    if (
-      !respostaPerfis.error
-    ) {
+    if (!respostaPerfis.error) {
       nomesAvaliadores =
         Object.fromEntries(
           (
             respostaPerfis.data ||
             []
           ).map(
-            (perfil
+            (perfil) => [
+              perfil.id,
+              perfil.nome
+            ]
+          )
+        );
+    }
+  }
+
+  const medias = {};
+
+  criterios.forEach(
+    (criterio) => {
+      medias[criterio.campo] =
+        calcularMedia(
+          registos.map(
+            (registo) =>
+              registo[
+                criterio.campo
+              ]
+          )
+        );
+    }
+  );
+
+  medias.geral =
+    calcularMedia(
+      criterios.map(
+        (criterio) =>
+          medias[
+            criterio.campo
+          ]
+      )
+    );
+
+  const numeroAvaliadores =
+    new Set(
+      registos.map(
+        (registo) =>
+          registo.avaliador_id
+      )
+    ).size;
+
+  const cartoes =
+    criterios
+      .map(
+        (criterio) => `
+          <div class="metric">
+            ${criterio.titulo}
+
+            <strong>
+              ${apresentarNota(
+                medias[
+                  criterio.campo
+                ]
+              )}
+            </strong>
+          </div>
+        `
+      )
+      .join("");
+
+  const linhas =
+    registos
+      .map(
+        (registo) => {
+          const mediaRegisto =
+            calcularMedia(
+              criterios.map(
+                (criterio) =>
+                  registo[
+                    criterio.campo
+                  ]
+              )
+            );
+
+          const avaliador =
+            nomesAvaliadores[
+              registo.avaliador_id
+            ] || "Avaliador";
+
+          return `
+            <tr>
+              <td>
+                ${formatarData(
+                  registo.data_avaliacao
+                )}
+              </td>
+
+              <td>
+                ${avaliador}
+              </td>
+
+              <td>
+                ${registo.sessao_semana}
+              </td>
+
+              <td>
+                ${apresentarNota(
+                  mediaRegisto
+                )}
+              </td>
+            </tr>
+          `;
+        }
+      )
+      .join("");
+
+  let titulo =
+    "Avaliações individuais";
+
+  if (periodo === "week") {
+    titulo = "Resultado semanal";
+  }
+
+  if (periodo === "month") {
+    titulo = "Resultado mensal";
+  }
+
+  $("#resultsOutput").innerHTML = `
+    <h3>
+      ${titulo}
+    </h3>
+
+    <p class="muted">
+      ${registos.length}
+      avaliação(ões), realizadas por
+      ${numeroAvaliadores}
+      de 4 avaliadores.
+    </p>
+
+    <div class="result-grid">
+      ${cartoes}
+
+      <div class="metric">
+        Resultado geral
+
+        <strong>
+          ${apresentarNota(
+            medias.geral
+          )}
+        </strong>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="result-list">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Avaliador</th>
+            <th>Sessão</th>
+            <th>Média</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${linhas}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  mostrarMensagem(
+    "",
+    false,
+    "#resultsMsg"
+  );
+}
+
+/* EVENTOS */
+
+function configurarEventos() {
+  $("#signin").addEventListener(
+    "click",
+    entrar
+  );
+
+  $("#logout").addEventListener(
+    "click",
+    sair
+  );
+
+  $("#save").addEventListener(
+    "click",
+    guardarAvaliacao
+  );
+
+  $("#prev").addEventListener(
+    "click",
+    () => navegar(-1)
+  );
+
+  $("#next").addEventListener(
+    "click",
+    () => navegar(1)
+  );
+
+  $("#password").addEventListener(
+    "keydown",
+    (evento) => {
+      if (evento.key === "Enter") {
+        entrar();
+      }
+    }
+  );
+
+  $("#evaluationDate")
+    .addEventListener(
+      "change",
+      apresentarAtleta
+    );
+
+  $("#weeklySlot")
+    .addEventListener(
+      "change",
+      apresentarAtleta
+    );
+
+  $("#tabEvaluate")
+    .addEventListener(
+      "click",
+      () => trocarVista(false)
+    );
+
+  $("#tabResults")
+    .addEventListener(
+      "click",
+      () => trocarVista(true)
+    );
+
+  $("#resultPeriod")
+    .addEventListener(
+      "change",
+      atualizarFiltroPeriodo
+    );
+
+  $("#loadResults")
+    .addEventListener(
+      "click",
+      carregarResultados
+    );
+}
+
+/* INÍCIO */
+
+async function iniciarAplicacao() {
+  if (!iniciarSupabase()) {
+    return;
+  }
+
+  $("#evaluationDate").value =
+    dataLocalISO();
+
+  $("#resultWeek").value =
+    semanaAtualISO();
+
+  $("#resultMonth").value =
+    dataLocalISO().slice(0, 7);
+
+  configurarEventos();
+
+  atualizarFiltroPeriodo();
+
+  await verificarSessao();
+
+  supabaseClient.auth
+    .onAuthStateChange(
+      async (
+        _evento,
+        sessao
+      ) => {
+        const novoUtilizador =
+          sessao?.user || null;
+
+        if (
+          novoUtilizador?.id ===
+          utilizador?.id
+        ) {
+          return;
+        }
+
+        utilizador =
+          novoUtilizador;
+
+        atualizarVisibilidade();
+
+        if (utilizador) {
+          await carregarAtletas();
+        }
+      }
+    );
+}
+
+document.addEventListener(
+  "DOMContentLoaded",
+  iniciarAplicacao
+);
