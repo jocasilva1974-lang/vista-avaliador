@@ -11,10 +11,7 @@
 
   <title>Vista do Avaliador</title>
 
-  <link
-    rel="stylesheet"
-    href="style.css"
-  >
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -35,10 +32,7 @@
 
     <!-- LOGIN -->
 
-    <section
-      id="login"
-      class="card"
-    >
+    <section id="login" class="card">
 
       <h2>Entrar</h2>
 
@@ -71,7 +65,7 @@
     </section>
 
 
-    <!-- NOVA PASSWORD -->
+    <!-- ALTERAR / RECUPERAR PASSWORD -->
 
     <section
       id="passwordRecovery"
@@ -118,6 +112,15 @@
         </button>
       </p>
 
+      <p>
+        <button
+          id="cancelPassword"
+          type="button"
+        >
+          Cancelar
+        </button>
+      </p>
+
       <p id="passwordMsg"></p>
 
     </section>
@@ -134,12 +137,23 @@
 
         <span id="who"></span>
 
-        <button
-          id="logout"
-          type="button"
-        >
-          Sair
-        </button>
+        <div>
+
+          <button
+            id="changePassword"
+            type="button"
+          >
+            Alterar password
+          </button>
+
+          <button
+            id="logout"
+            type="button"
+          >
+            Sair
+          </button>
+
+        </div>
 
       </div>
 
@@ -183,7 +197,6 @@
 
           <h2 id="person"></h2>
 
-
           <div class="form-grid">
 
             <label>
@@ -221,7 +234,6 @@
             </label>
 
           </div>
-
 
           <div
             id="status"
